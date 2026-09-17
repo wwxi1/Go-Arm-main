@@ -118,6 +118,7 @@ static void Arm_Interpolation_Start(float u1_target,float u2_target, float dj_ta
     ArmControl.u2.start_angle = Unitree_motors[1].data.position;
     ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
 
+    ArmControl.Cart.cartesian = false;
     ArmControl.u1.target = u1_target;
     ArmControl.u2.target = u2_target;
     ArmControl.dj.target = dj_target;
@@ -137,6 +138,7 @@ static void Arm_Interpolation_Pos_Start(float pos_x,float pos_y,float dj_target,
     Pos_target.x=pos_x;
     Pos_target.y=pos_y;
 
+    ArmControl.Cart.cartesian = false;
     Unitree_Theta_t angle_target;
     angle_target=Inverse(Pos_target);
 
