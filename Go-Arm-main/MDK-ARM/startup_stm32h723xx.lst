@@ -1282,10 +1282,10 @@ d_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I../Drivers/CMSIS/RTOS2/Include
  -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I..
 /Middlewares/ST/ARM/DSP/Inc -I../Motor/inc -I../Application/inc -I../BSP/inc -I
 ../Algorithm/inc -I../Config -I../Communication/Bluetooth -I../Communication/VO
-FA -I.\RTE\_27RC_Proj_Template -IE:\app\Keil\keil_pack\ARM\CMSIS\5.9.0\CMSIS\Co
-re\Include --predefine="__UVISION_VERSION SETA 537" --predefine="_RTE_ SETA 1" 
---predefine="STM32H723xx SETA 1" --predefine="_RTE_ SETA 1" --list=startup_stm3
-2h723xx.lst startup_stm32h723xx.s
+FA -I.\RTE\_27RC_Proj_Template -ID:\keil5\ARM\PACK\ARM\CMSIS\5.9.0\CMSIS\Core\I
+nclude --predefine="__UVISION_VERSION SETA 537" --predefine="_RTE_ SETA 1" --pr
+edefine="STM32H723xx SETA 1" --predefine="_RTE_ SETA 1" --list=startup_stm32h72
+3xx.lst startup_stm32h723xx.s
 
 
 

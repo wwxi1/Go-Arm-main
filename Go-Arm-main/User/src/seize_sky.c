@@ -7,8 +7,8 @@
 #define ARM_INTERPOLATION_DT    0.001f
 #define ARM_EPSILON             0.0001f
 #define ARM_MOVE_TIME           1.0f
-#define ARM_Debug_MOVE_TIME     8.0f
-
+#define ARM_Debug_MOVE_TIME     6.0f
+#define ARM_Pos_Debug_MOVE_TIME 30.0f
 #define ARM_MOVE_SKY_TIME       2.0f
 
 //五次多项式轨迹参数(归一化时间域 t∈[0,1],末速度/末加速度固定为0)
@@ -33,7 +33,7 @@ volatile uint8_t Is_sky_ready=0;
 volatile Vec2 Target_Vec;
 ArmControl_t ArmControl;
 Arm_Interpolation_t Arm_Debug={0,0,0,ARM_Debug_MOVE_TIME};
-Arm_Interpolation_Pos_t Arm_Pos_Debug={{0,0},{0,0},0,ARM_Debug_MOVE_TIME};
+Arm_Interpolation_Pos_t Arm_Pos_Debug={0,0,0,ARM_Pos_Debug_MOVE_TIME};
 Arm_Kinetics_Data_t Arm_Kinetics_Data={0};
 
 static uint8_t Is_enable=0;
@@ -129,12 +129,9 @@ static void Arm_Interpolation_Start(float u1_target,float u2_target, float dj_ta
 
 static void Arm_Interpolation_Pos_Start(float pos_x,float pos_y,float dj_target,float move_time)
 {
-    Vec2 Pos_target_U1;
-    Vec2 Pos_target_U2;
-    Pos_target_U1.x=pos_x;
-    Pos_target_U1.y=pos_y;
-    Pos_target_U2.x=pos_x;
-    Pos_target_U2.y=pos_y;
+    Vec2 Pos_target;
+    Pos_target.x=pos_x;
+    Pos_target.y=pos_y;
 
     Unitree_Theta_t angle_target;
     angle_target=Inverse(Pos_target);
@@ -260,7 +257,17 @@ static void Arm_Debug_Process(void)
     if (ArmControl.running == false &&
         ArmControl.finish == false)
     {
-        Arm_Interpolation_Pos_Start(float pos_x,float pos_y,Arm_Debug.dj_target,Arm_Debug.move_time)
+        Arm_Interpolation_Start(Arm_Debug.u1_target,Arm_Debug.u2_target,Arm_Debug.dj_target,Arm_Debug.move_time);
+
+    }
+}
+static void Arm_Pos_Debug_Process(void)
+{
+    if (ArmControl.running == false &&
+        ArmControl.finish == false)
+    {
+        Arm_Interpolation_Pos_Start(Arm_Pos_Debug.x,Arm_Pos_Debug.y,Arm_Pos_Debug.dj_target,Arm_Pos_Debug.move_time);
+    
     }
 }
 
@@ -663,6 +670,9 @@ void Arm_Control_Task(void *argument)
                 Arm_Debug_Process();
                 break;
 
+            case ARM_Pos_DEBUG:
+                Arm_Pos_Debug_Process();
+                break;
 
             default:
             ArmControl.running = false;

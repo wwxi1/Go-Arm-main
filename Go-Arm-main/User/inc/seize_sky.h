@@ -103,7 +103,8 @@ typedef enum
     ARM_STATE_LOW1,      // 放一层
     ARM_STATE_MID1,      // 放二层
     ARM_STATE_HIGH,       // 放三层
-    ARM_DEBUG
+    ARM_DEBUG,
+    ARM_Pos_DEBUG
 } ArmState_t;
 
 typedef struct
@@ -145,8 +146,8 @@ typedef struct
 
 typedef struct
 {
-    float u1_Pos_target[2];                 //大臂末端x,y值
-    float u2_Pos_target[2];                 //小臂末端x,y值
+    float x;                 //末端x值
+    float y;                 //末端y值
     float dj_target;
     float move_time;
 
