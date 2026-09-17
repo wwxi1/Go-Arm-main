@@ -1,0 +1,29 @@
+; *********************************************************************************
+; *** Scatter-Loading Description File                                     ***
+; *** RAM 段约定(配合 Application/inc/includes.h 的 __RAM_Dx_ 宏):          ***
+; ***   .RAM_D1 -> AXI SRAM 0x24000000(可被 D-Cache 缓存,放计算数据)        ***
+; ***   .RAM_D2 -> SRAM1/2/3 0x30000000(DMA 可达,放外设缓冲区)              ***
+; ***   .RAM_D3 -> SRAM4 0x38000000(DMA 可达)                               ***
+; *** DTCM 前 1KB 留给向量表重定向(main.c USER CODE 1)                       ***
+; *********************************************************************************;
+
+LR_IROM1 0x08000000 0x00080000  {  ; load region size_region
+  ER_IROM1 0x08000000 0x00080000  {  ; load address = execution address
+   *.o (RESET, +First)
+   *(InRoot$$Sections)
+   .ANY (+XO)
+   .ANY (+RO)
+  }
+  RW_IRAM1 0x20000400 0x0001FC00  {  ; DTCM, 前 1KB 是向量表
+   .ANY (+RW +ZI)
+  }
+  RW_RAM_AXI0 0x24000000 0x00020000  {
+   *(.RAM_D1)
+  }
+  RW_RAM_D2 0x30000000 0x00008000  {
+   *(.RAM_D2)
+  }
+  RW_RAM_D3 0x38000000 0x00004000  {
+   *(.RAM_D3)
+  }
+}

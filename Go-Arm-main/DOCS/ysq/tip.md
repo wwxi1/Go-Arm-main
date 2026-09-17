@@ -1,0 +1,1 @@
+Unitree GO-M8010-6 为绝对编码器电机，驱动默认不上电自动清零；上电/首次使能前应先在机械零位调用 UnitreeMotor_SetZero(id)。

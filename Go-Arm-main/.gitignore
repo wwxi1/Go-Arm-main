@@ -1,0 +1,12 @@
+# Keil MDK-ARM 编译产物(每次编译都会重新生成,无需提交)
+MDK-ARM/27RC_Proj_Template/
+MDK-ARM/RTE/
+MDK-ARM/DebugConfig/
+
+# 每个用户自己的 Keil 界面布局文件
+MDK-ARM/*.uvguix.*
+
+# vscode配置文件
+.vscode/
+
+
