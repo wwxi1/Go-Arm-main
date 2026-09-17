@@ -113,8 +113,9 @@ typedef enum
     ARM_STATE_LOW1,      // 放一层
     ARM_STATE_MID1,      // 放二层
     ARM_STATE_HIGH,       // 放三层
-    ARM_DEBUG,
-    ARM_Pos_DEBUG
+    ARM_DEBUG,           // 正运动学调试
+    ARM_Pos_DEBUG,       //逆运动学关节坐标系调试
+    ARM_CartPos_DEBUG    //逆运动学笛卡尔坐标系调试
 } ArmState_t;
 
 typedef struct

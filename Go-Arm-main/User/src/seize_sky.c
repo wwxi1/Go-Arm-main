@@ -118,6 +118,7 @@ static void Arm_Interpolation_Start(float u1_target,float u2_target, float dj_ta
     ArmControl.u2.start_angle = Unitree_motors[1].data.position;
     ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
 
+
     ArmControl.Cart.cartesian = false;
     ArmControl.u1.target = u1_target;
     ArmControl.u2.target = u2_target;
@@ -146,8 +147,7 @@ static void Arm_Interpolation_Pos_Start(float pos_x,float pos_y,float dj_target,
 }
 
 
-static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y,
-                                         float dj_target, float move_time)
+static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y,float dj_target, float move_time)
 {
     Unitree_Theta_t now;
     now.u1_theta = Unitree_motors[0].data.position;
@@ -333,6 +333,16 @@ static void Arm_Pos_Debug_Process(void)
         ArmControl.finish == false)
     {
         Arm_Interpolation_Pos_Start(Arm_Pos_Debug.x,Arm_Pos_Debug.y,Arm_Pos_Debug.dj_target,Arm_Pos_Debug.move_time);
+    
+    }
+}
+
+static void Arm_CartPos_Debug_Process(void)
+{
+    if (ArmControl.running == false &&
+        ArmControl.finish == false)
+    {
+        Arm_Interpolation_Cart_Start(Arm_Pos_Debug.x,Arm_Pos_Debug.y,Arm_Pos_Debug.dj_target,Arm_Pos_Debug.move_time);
     
     }
 }
@@ -739,7 +749,9 @@ void Arm_Control_Task(void *argument)
             case ARM_Pos_DEBUG:
                 Arm_Pos_Debug_Process();
                 break;
-
+            case ARM_CartPos_DEBUG:
+                Arm_CartPos_Debug_Process();
+                break;
             default:
             ArmControl.running = false;
                 ArmControl.finish = true;
