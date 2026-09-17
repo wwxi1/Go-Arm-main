@@ -91,6 +91,16 @@ typedef struct
     float ARM_DJ_ROS;
 } ARM_POS_t;
 
+//笛卡尔差值
+typedef struct
+{
+    float start_x;
+    float start_y;
+    float target_x;
+    float target_y;
+    bool  cartesian;      // true = 笛卡尔模式
+} ArmCart_t;
+
 typedef enum
 {
     ARM_STATE_NONE = 0,
@@ -128,6 +138,8 @@ typedef struct
     ArmInterpolationPoint_t u2;
 
     ArmInterpolationPoint_t dj;
+
+    ArmCart_t Cart;
 
     volatile bool running;
 

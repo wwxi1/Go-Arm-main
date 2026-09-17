@@ -63,7 +63,7 @@ void Relay_OFF(void)
 //  s(0)=0, s(1)=1
 //  s'(0)=v0(可配置), s'(1)=0
 //  s''(0)=acc0(可配置), s''(1)=0
-static float Target_Quintic_Interpolation(float start_angle,float target,float time,float total_time)
+static float Quintic_Trajectory(float time, float total_time)
 {
     float t;
     float t2;
@@ -73,12 +73,7 @@ static float Target_Quintic_Interpolation(float start_angle,float target,float t
     float s;
     float v0   = ARM_START_VELOCITY;
     float acc0 = ARM_START_ACCEL;
-
-    if (total_time<=0)
-    {
-        return target;
-    }
-
+    
     t=time/total_time;
 
     if(t<=0.0f)
@@ -97,14 +92,23 @@ static float Target_Quintic_Interpolation(float start_angle,float target,float t
 
     //由边界条件解出的系数:
     //a1=v0, a2=acc0/2, a3=10-6v0-1.5acc0, a4=-15+8v0+1.5acc0, a5=6-3v0-0.5acc0
-    s= v0*t
+    return s= v0*t
       +0.5f*acc0*t2
       +(10.0f-6.0f*v0-1.5f*acc0)*t3
       +(-15.0f+8.0f*v0+1.5f*acc0)*t4
       +(6.0f-3.0f*v0-0.5f*acc0)*t5;
+}
 
-    return start_angle+(target-start_angle)*s;
+static float Target_Quintic_Interpolation(float start_angle, float target,
+                                          float time, float total_time)              
+{
+    if (total_time<=0)
+    {
+        return target;
+    }
 
+    float s = Quintic_Trajectory(time, total_time);
+    return start_angle + (target - start_angle) * s;
 }
 
 //开始轨迹计算
@@ -140,7 +144,29 @@ static void Arm_Interpolation_Pos_Start(float pos_x,float pos_y,float dj_target,
 }
 
 
+static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y,
+                                         float dj_target, float move_time)
+{
+    Unitree_Theta_t now;
+    now.u1_theta = Unitree_motors[0].data.position;
+    now.u2_theta = Unitree_motors[1].data.position;
 
+    Vec2 now_pos = Forward(now);        // 起点为此刻真实末端位置
+
+    ArmControl.Cart.start_x  = now_pos.x;
+    ArmControl.Cart.start_y  = now_pos.y;
+    ArmControl.Cart.target_x = pos_x;
+    ArmControl.Cart.target_y = pos_y;
+    ArmControl.Cart.cartesian = true;
+
+    ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
+    ArmControl.dj.target      = dj_target;
+
+    ArmControl.time       = 0.0f;
+    ArmControl.total_time = move_time;
+    ArmControl.running    = true;
+    ArmControl.finish     = false;
+}
 
 
 
@@ -155,20 +181,58 @@ static void Arm_Interpolation_Update(void)
     {
         return ;
     }
+    
+    float s = Quintic_Trajectory(ArmControl.time, ArmControl.total_time);
+    if (ArmControl.Cart.cartesian)
+    {
+       
+        Vec2 p;
+        p.x = ArmControl.Cart.start_x
+            + (ArmControl.Cart.target_x - ArmControl.Cart.start_x) * s;
+        p.y = ArmControl.Cart.start_y
+            + (ArmControl.Cart.target_y - ArmControl.Cart.start_y) * s;
 
-   
+        //可达域检查
+        float r = sqrtf(p.x * p.x + p.y * p.y);
+        if (r > (ARM_U1_LENTH + ARM_U2_LENTH) ||
+            r < fabsf(ARM_U1_LENTH - ARM_U2_LENTH))
+        {
+            ArmControl.running = false;
+            ArmControl.finish  = true;
+            return;                     
+        }
 
+        Unitree_Theta_t th = Inverse(p);
+        Unitree_motors[0].cmd.position = th.u1_theta;
+        Unitree_motors[1].cmd.position = th.u2_theta;
+        DJmotor[0].valSet.angle_deg = ArmControl.dj.start_angle+ (ArmControl.dj.target - ArmControl.dj.start_angle) * s;
+    }
+
+    else
+    {
     Unitree_motors[0].cmd.position =Target_Quintic_Interpolation(ArmControl.u1.start_angle,ArmControl.u1.target,ArmControl.time,ArmControl.total_time);
     Unitree_motors[1].cmd.position = Target_Quintic_Interpolation(ArmControl.u2.start_angle,ArmControl.u2.target,ArmControl.time,ArmControl.total_time);
     DJmotor[0].valSet.angle_deg =  Target_Quintic_Interpolation(ArmControl.dj.start_angle,ArmControl.dj.target,ArmControl.time,ArmControl.total_time);
+    }
 
     ArmControl.time += ARM_INTERPOLATION_DT;
 
     if (ArmControl.time >= ArmControl.total_time)
     {
+        if (ArmControl.Cart.cartesian)
+        {
+            Vec2 p_end;
+            p_end.x = ArmControl.Cart.target_x;
+            p_end.y = ArmControl.Cart.target_y;
+            Unitree_Theta_t last = Inverse(p_end);
+            Unitree_motors[0].cmd.position = last.u1_theta;
+            Unitree_motors[1].cmd.position = last.u2_theta;
+        }
+        else{
         ArmControl.time = ArmControl.total_time;
         Unitree_motors[0].cmd.position = ArmControl.u1.target;
         Unitree_motors[1].cmd.position = ArmControl.u2.target;
+        }
         DJmotor[0].valSet.angle_deg = ArmControl.dj.target;
         ArmControl.running = false;
         ArmControl.finish = true;
