@@ -16,27 +16,59 @@
 #define ARM_START_VELOCITY    0.8f
 #define ARM_START_ACCEL       4.6f
 
+Arm_Pose_t Arm_Pose_Table[ARM_STATE_COUNT] =
+{
+    [ARM_STATE_NONE]      = {ARM_U1_START_POS,    ARM_U2_START_POS,    ARM_DJ_START_POS,    ARM_MOVE_TIME},
+    [ARM_STATE_READY]     = {ARM_U1_READY_POS,    ARM_U2_READY_POS,    ARM_DJ_READY_POS,    ARM_MOVE_TIME},
+    [ARM_STATE_LOW]       = {ARM_U1_LOW_POS,      ARM_U2_LOW_POS,      ARM_DJ_LOW_POS,      ARM_MOVE_TIME},
+    [ARM_STATE_MID]       = {ARM_U1_MID_POS,      ARM_U2_MID_POS,      ARM_DJ_MID_POS,      ARM_MOVE_TIME},
+    [ARM_STATE_SKY]       = {ARM_U1_SKY_POS,      ARM_U2_SKY_POS,      ARM_DJ_SKY_POS,      ARM_MOVE_TIME},
+    [ARM_STATE_KEEP]      = {ARM_U1_KEEP_POS,     ARM_U2_KEEP_POS,     ARM_DJ_KEEP_POS,     ARM_MOVE_TIME},
+    [ARM_STATE_SKY_READY] = {ARM_U1_SKY_READY_POS,ARM_U2_SKY_READY_POS,ARM_DJ_SKY_READY_POS,ARM_MOVE_TIME},
+    [ARM_STATE_LOW1]      = {ARM_U1_LOW1_POS,     ARM_U2_LOW1_POS,     ARM_DJ_LOW1_POS,     ARM_MOVE_TIME},
+    [ARM_STATE_MID1]      = {ARM_U1_MID1_POS,     ARM_U2_MID1_POS,     ARM_DJ_MID1_POS,     ARM_MOVE_TIME},
+    [ARM_STATE_HIGH]      = {ARM_U1_HIGH_POS,     ARM_U2_HIGH_POS,     ARM_DJ_HIGH_POS,     ARM_MOVE_SKY_TIME},
+    // 三个调试状态：占位，运行时由 Arm_Refresh_Debug_Pose() 写回
+    [ARM_DEBUG]           = {0.0f, 0.0f, 0.0f, ARM_Debug_MOVE_TIME},
+    [ARM_Pos_DEBUG]       = {0.0f, 0.0f, 0.0f, ARM_Pos_Debug_MOVE_TIME},
+    [ARM_CartPos_DEBUG]   = {0.0f, 0.0f, 0.0f, ARM_Pos_Debug_MOVE_TIME},
+};
+
+//把三个调试状态的动态目标值写回配置表(非调试状态直接返回)
+static void Arm_Refresh_Debug_Pose(ArmState_t state)
+{
+    if (state != ARM_DEBUG &&
+        state != ARM_Pos_DEBUG &&
+        state != ARM_CartPos_DEBUG)
+    {
+        return;
+    }
+
+    Arm_Pose_Table[ARM_DEBUG].u1 = Arm_Debug.u1_target;
+    Arm_Pose_Table[ARM_DEBUG].u2 = Arm_Debug.u2_target;
+    Arm_Pose_Table[ARM_DEBUG].dj = Arm_Debug.dj_target;
+    Arm_Pose_Table[ARM_DEBUG].move_time = Arm_Debug.move_time;
+
+    Vec2 p = {Arm_Pos_Debug.x, Arm_Pos_Debug.y};
+    Unitree_Theta_t th = Inverse(p);                 // 关节角（非笛卡尔）
+    Arm_Pose_Table[ARM_Pos_DEBUG].u1 = th.u1_theta;
+    Arm_Pose_Table[ARM_Pos_DEBUG].u2 = th.u2_theta;
+    Arm_Pose_Table[ARM_Pos_DEBUG].dj = Arm_Pos_Debug.dj_target;
+    Arm_Pose_Table[ARM_Pos_DEBUG].move_time = Arm_Pos_Debug.move_time;
+
+    // 笛卡尔状态：u1/u2 由 x/y 轨迹覆盖，仅写 dj 与时长
+    Arm_Pose_Table[ARM_CartPos_DEBUG].dj = Arm_Pos_Debug.dj_target;
+    Arm_Pose_Table[ARM_CartPos_DEBUG].move_time = Arm_Pos_Debug.move_time;
+}
 
 volatile uint8_t level_flag=1;
-volatile uint8_t Is_pick=0;
-volatile uint8_t Is_place=0;
-volatile uint8_t Is_store=0;
-volatile uint8_t Is_ready=0;
-volatile uint8_t Is_reset=0;
-volatile uint8_t Is_keep=0;
-volatile uint8_t Is_on=0;
 volatile uint8_t Is_open=0;
 volatile uint8_t Is_ok=0;
-volatile uint8_t Is_Sys_reset=0;
-volatile uint8_t Is_sky_ready=0;
 
-volatile Vec2 Target_Vec;
 ArmControl_t ArmControl;
 Arm_Interpolation_t Arm_Debug={0,0,0,ARM_Debug_MOVE_TIME};
 Arm_Interpolation_Pos_t Arm_Pos_Debug={0,0,0,ARM_Pos_Debug_MOVE_TIME};
 Arm_Kinetics_Data_t Arm_Kinetics_Data={0};
-
-static uint8_t Is_enable=0;
 
 
 
@@ -63,17 +95,21 @@ void Relay_OFF(void)
 //  s(0)=0, s(1)=1
 //  s'(0)=v0(可配置), s'(1)=0
 //  s''(0)=acc0(可配置), s''(1)=0
-static float Quintic_Trajectory(float time, float total_time)
+static float Quintic_S(float time, float total_time)
 {
     float t;
     float t2;
     float t3;
     float t4;
     float t5;
-    float s;
     float v0   = ARM_START_VELOCITY;
     float acc0 = ARM_START_ACCEL;
-    
+
+    if (total_time <= 0.0f)
+    {
+        return 1.0f;
+    }
+
     t=time/total_time;
 
     if(t<=0.0f)
@@ -92,7 +128,7 @@ static float Quintic_Trajectory(float time, float total_time)
 
     //由边界条件解出的系数:
     //a1=v0, a2=acc0/2, a3=10-6v0-1.5acc0, a4=-15+8v0+1.5acc0, a5=6-3v0-0.5acc0
-    return s= v0*t
+    return v0*t
       +0.5f*acc0*t2
       +(10.0f-6.0f*v0-1.5f*acc0)*t3
       +(-15.0f+8.0f*v0+1.5f*acc0)*t4
@@ -100,81 +136,60 @@ static float Quintic_Trajectory(float time, float total_time)
 }
 
 static float Target_Quintic_Interpolation(float start_angle, float target,
-                                          float time, float total_time)              
+                                          float time, float total_time)
 {
     if (total_time<=0)
     {
         return target;
     }
 
-    float s = Quintic_Trajectory(time, total_time);
+    float s = Quintic_S(time, total_time);
     return start_angle + (target - start_angle) * s;
 }
 
 //开始轨迹计算
-static void Arm_Interpolation_Start(float u1_target,float u2_target, float dj_target, float move_time)
+static void Arm_Interpolation_Start(Arm_Pose_t pose)
 {
-    ArmControl.u1.start_angle = Unitree_motors[0].data.position;
-    ArmControl.u2.start_angle = Unitree_motors[1].data.position;
-    ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
+    ArmControl.pose = pose;                              // 更新状态配置（电机1/2/3 + 运行时间）
 
+    ArmControl.traj.ctrl.u1_start = Unitree_motors[0].data.position;
+    ArmControl.traj.ctrl.u2_start = Unitree_motors[1].data.position;
+    ArmControl.traj.ctrl.dj_start = DJmotor[0].valNow.angle_deg;
 
-    ArmControl.Cart.cartesian = false;
-    ArmControl.u1.target = u1_target;
-    ArmControl.u2.target = u2_target;
-    ArmControl.dj.target = dj_target;
+    ArmControl.traj.ctrl.u1_target = pose.u1;
+    ArmControl.traj.ctrl.u2_target = pose.u2;
+    ArmControl.traj.ctrl.dj_target = pose.dj;
 
-    ArmControl.time = 0.0f;
-    ArmControl.total_time = move_time;
+    ArmControl.traj.ctrl.time       = 0.0f;
+    ArmControl.traj.ctrl.total_time = pose.move_time;
+    ArmControl.traj.ctrl.dt         = ARM_INTERPOLATION_DT;
+    ArmControl.traj.mode            = ARM_MODE_DEFAULT;
 
-    ArmControl.running = true;
-    ArmControl.finish = false;
-
+    /* 不在此置 running/finish —— 由 Arm_Func 依据目标值变化沿决定 */
 }
 
 
-static void Arm_Interpolation_Pos_Start(float pos_x,float pos_y,float dj_target,float move_time)
+static void Arm_Interpolation_Cart_Start(Arm_Pose_t pose, float x, float y)
 {
-    Vec2 Pos_target;
-    Pos_target.x=pos_x;
-    Pos_target.y=pos_y;
+    Unitree_Theta_t now = {Unitree_motors[0].data.position,
+                           Unitree_motors[1].data.position};
+    Vec2 now_pos = Forward(now);                       // 起点 = 当前真实末端
 
-    ArmControl.Cart.cartesian = false;
-    Unitree_Theta_t angle_target;
-    angle_target=Inverse(Pos_target);
+    ArmControl.pose = pose;                            // dj + move_time 来自表
+    ArmControl.traj.ctrl.start_x  = now_pos.x;
+    ArmControl.traj.ctrl.start_y  = now_pos.y;
+    ArmControl.traj.ctrl.target_x = x;
+    ArmControl.traj.ctrl.target_y = y;
+    ArmControl.traj.ctrl.dj_start = DJmotor[0].valNow.angle_deg;
+    ArmControl.traj.ctrl.dj_target = pose.dj;
 
-    Arm_Interpolation_Start(angle_target.u1_theta,angle_target.u2_theta,dj_target,move_time);
+    ArmControl.traj.ctrl.time = 0.0f;
+    ArmControl.traj.ctrl.total_time = pose.move_time;
+    ArmControl.traj.ctrl.dt = ARM_INTERPOLATION_DT;
+    ArmControl.traj.mode = ARM_MODE_CARTESIAN;
+
+    /* 不在此置 running/finish —— 由 Arm_Func 依据目标坐标变化沿决定 */
 }
-
-
-static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y,float dj_target, float move_time)
-{
-    Unitree_Theta_t now;
-    now.u1_theta = Unitree_motors[0].data.position;
-    now.u2_theta = Unitree_motors[1].data.position;
-
-    Vec2 now_pos = Forward(now);        // 起点为此刻真实末端位置
-
-    ArmControl.Cart.start_x  = now_pos.x;
-    ArmControl.Cart.start_y  = now_pos.y;
-    ArmControl.Cart.target_x = pos_x;
-    ArmControl.Cart.target_y = pos_y;
-    ArmControl.Cart.cartesian = true;
-
-    ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
-    ArmControl.dj.target      = dj_target;
-
-    ArmControl.time       = 0.0f;
-    ArmControl.total_time = move_time;
-    ArmControl.running    = true;
-    ArmControl.finish     = false;
-}
-
-
-
-
-
-
 
 //轨迹点更新
 static void Arm_Interpolation_Update(void)
@@ -184,15 +199,15 @@ static void Arm_Interpolation_Update(void)
         return ;
     }
     
-    float s = Quintic_Trajectory(ArmControl.time, ArmControl.total_time);
-    if (ArmControl.Cart.cartesian)
+    float s = Quintic_S(ArmControl.traj.ctrl.time, ArmControl.traj.ctrl.total_time);
+    if (ArmControl.traj.mode==ARM_MODE_CARTESIAN)
     {
-       
+
         Vec2 p;
-        p.x = ArmControl.Cart.start_x
-            + (ArmControl.Cart.target_x - ArmControl.Cart.start_x) * s;
-        p.y = ArmControl.Cart.start_y
-            + (ArmControl.Cart.target_y - ArmControl.Cart.start_y) * s;
+        p.x = ArmControl.traj.ctrl.start_x
+            + (ArmControl.traj.ctrl.target_x - ArmControl.traj.ctrl.start_x) * s;
+        p.y = ArmControl.traj.ctrl.start_y
+            + (ArmControl.traj.ctrl.target_y - ArmControl.traj.ctrl.start_y) * s;
 
         //可达域检查
         float r = sqrtf(p.x * p.x + p.y * p.y);
@@ -201,573 +216,192 @@ static void Arm_Interpolation_Update(void)
         {
             ArmControl.running = false;
             ArmControl.finish  = true;
-            return;                     
+            return;
         }
 
         Unitree_Theta_t th = Inverse(p);
         Unitree_motors[0].cmd.position = th.u1_theta;
         Unitree_motors[1].cmd.position = th.u2_theta;
-        DJmotor[0].valSet.angle_deg = ArmControl.dj.start_angle+ (ArmControl.dj.target - ArmControl.dj.start_angle) * s;
+        DJmotor[0].valSet.angle_deg = ArmControl.traj.ctrl.dj_start
+            + (ArmControl.traj.ctrl.dj_target - ArmControl.traj.ctrl.dj_start) * s;
     }
 
     else
     {
-    Unitree_motors[0].cmd.position =Target_Quintic_Interpolation(ArmControl.u1.start_angle,ArmControl.u1.target,ArmControl.time,ArmControl.total_time);
-    Unitree_motors[1].cmd.position = Target_Quintic_Interpolation(ArmControl.u2.start_angle,ArmControl.u2.target,ArmControl.time,ArmControl.total_time);
-    DJmotor[0].valSet.angle_deg =  Target_Quintic_Interpolation(ArmControl.dj.start_angle,ArmControl.dj.target,ArmControl.time,ArmControl.total_time);
+    Unitree_motors[0].cmd.position =Target_Quintic_Interpolation(ArmControl.traj.ctrl.u1_start,ArmControl.traj.ctrl.u1_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
+    Unitree_motors[1].cmd.position = Target_Quintic_Interpolation(ArmControl.traj.ctrl.u2_start,ArmControl.traj.ctrl.u2_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
+    DJmotor[0].valSet.angle_deg =  Target_Quintic_Interpolation(ArmControl.traj.ctrl.dj_start,ArmControl.traj.ctrl.dj_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
     }
 
-    ArmControl.time += ARM_INTERPOLATION_DT;
+    ArmControl.traj.ctrl.time += ArmControl.traj.ctrl.dt;
 
-    if (ArmControl.time >= ArmControl.total_time)
+    if (ArmControl.traj.ctrl.time >= ArmControl.traj.ctrl.total_time)
     {
-        if (ArmControl.Cart.cartesian)
+        ArmControl.traj.ctrl.time = ArmControl.traj.ctrl.total_time;
+        if (ArmControl.traj.mode==ARM_MODE_CARTESIAN)
         {
             Vec2 p_end;
-            p_end.x = ArmControl.Cart.target_x;
-            p_end.y = ArmControl.Cart.target_y;
+            p_end.x = ArmControl.traj.ctrl.target_x;
+            p_end.y = ArmControl.traj.ctrl.target_y;
             Unitree_Theta_t last = Inverse(p_end);
             Unitree_motors[0].cmd.position = last.u1_theta;
             Unitree_motors[1].cmd.position = last.u2_theta;
         }
         else{
-        ArmControl.time = ArmControl.total_time;
-        Unitree_motors[0].cmd.position = ArmControl.u1.target;
-        Unitree_motors[1].cmd.position = ArmControl.u2.target;
+        Unitree_motors[0].cmd.position = ArmControl.traj.ctrl.u1_target;
+        Unitree_motors[1].cmd.position = ArmControl.traj.ctrl.u2_target;
         }
-        DJmotor[0].valSet.angle_deg = ArmControl.dj.target;
+        DJmotor[0].valSet.angle_deg = ArmControl.traj.ctrl.dj_target;
         ArmControl.running = false;
         ArmControl.finish = true;
-        // Is_pick=0;
-        // Is_place=0;
-        // Is_store=0;
-        // Is_reset=0;
-        // Is_ready=0;
-
     }
 
 }
-
 
 
 //机械臂位置、模式初始化
 void Arm_Control_Init(void)
 {
-    ArmControl.state=ARM_STATE_NONE;
-    ArmControl.last_state=ARM_STATE_NONE;
+    ArmControl.enable    = false;
+    ArmControl.reset     = false;
+    ArmControl.state     = ARM_STATE_NONE;
+    ArmControl.req_state = ARM_STATE_NONE;
 
-    ArmControl.time = 0.0f;
-    ArmControl.total_time = ARM_MOVE_TIME;
+    ArmControl.pose = Arm_Pose_Table[ARM_STATE_NONE];
+
+    ArmControl.traj.mode = ARM_MODE_DEFAULT;
+
+    ArmControl.traj.ctrl.u1_start = 0.0f;
+    ArmControl.traj.ctrl.u2_start = 0.0f;
+    ArmControl.traj.ctrl.dj_start = 0.0f;
+
+    //目标值与初始状态(NONE)配置一致,保证首次非NONE命令能触发目标变化沿
+    ArmControl.traj.ctrl.u1_target = Arm_Pose_Table[ARM_STATE_NONE].u1;
+    ArmControl.traj.ctrl.u2_target = Arm_Pose_Table[ARM_STATE_NONE].u2;
+    ArmControl.traj.ctrl.dj_target = Arm_Pose_Table[ARM_STATE_NONE].dj;
+
+    ArmControl.traj.ctrl.time       = 0.0f;
+    ArmControl.traj.ctrl.total_time = ARM_MOVE_TIME;
+    ArmControl.traj.ctrl.dt         = ARM_INTERPOLATION_DT;
+
+    ArmControl.traj.ctrl.start_x  = 0.0f;
+    ArmControl.traj.ctrl.start_y  = 0.0f;
+    ArmControl.traj.ctrl.target_x = 0.0f;
+    ArmControl.traj.ctrl.target_y = 0.0f;
 
     ArmControl.running = false;
-    ArmControl.finish = true;
-
-    ArmControl.u1.start_angle = 0.0f;
-    ArmControl.u1.target = ARM_U1_START_POS;
-
-    ArmControl.u2.start_angle = 0.0f;
-    ArmControl.u2.target = ARM_U2_START_POS;
-
-    ArmControl.dj.start_angle = 0.0f;
-    ArmControl.dj.target = ARM_DJ_START_POS;
-
+    ArmControl.finish  = true;   //防止上电后立刻乱动
 }
 
 
 
-// void Arm_Control_SetState(ArmState_t state)
-// {
-//     if (state < ARM_STATE_NONE || state > ARM_STATE_HIGH)
-//     {
-//         return;
-//     }
-//      ArmControl.state = state;
-// }
-
-
-// ArmState_t Arm_Control_GetState(void)
-// {
-//     return ArmControl.state;
-// }
-
-
-
-
-
-//其中一种状态，其他状态最后根据具体情况添加
-//准备状态
-static void Arm_Ready_Process(void)
+//机械臂运动更新(1kHz,运行于TIM2中断)
+//1.使能沿收敛  2.复位则系统复位  3.夹爪继电器  4.未使能直接return
+//5.模式切换变化沿检测(更新状态+配置)  6.运动更新(默认给转角/笛卡尔先规划再逆解)
+void Arm_Func(void)
 {
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
+    static uint8_t s_motor_enabled = 0;
+
+    /* 1) 使能判断:先收敛电机使能沿 */
+    if (ArmControl.enable)
     {
-       Arm_Interpolation_Start(ARM_U1_READY_POS,ARM_U2_READY_POS,ARM_DJ_READY_POS,ARM_MOVE_TIME);
-    }
-}
-
-//天空块准备阶段
-static void Arm_sky_Ready_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-       Arm_Interpolation_Start(ARM_U1_SKY_READY_POS,ARM_U2_SKY_READY_POS,ARM_DJ_SKY_READY_POS,ARM_MOVE_TIME);
-    }
-}
-
-
-
-//调试状态
-static void Arm_Debug_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(Arm_Debug.u1_target,Arm_Debug.u2_target,Arm_Debug.dj_target,Arm_Debug.move_time);
-
-    }
-}
-static void Arm_Pos_Debug_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Pos_Start(Arm_Pos_Debug.x,Arm_Pos_Debug.y,Arm_Pos_Debug.dj_target,Arm_Pos_Debug.move_time);
-    
-    }
-}
-
-static void Arm_CartPos_Debug_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Cart_Start(Arm_Pos_Debug.x,Arm_Pos_Debug.y,Arm_Pos_Debug.dj_target,Arm_Pos_Debug.move_time);
-    
-    }
-}
-
-
-//起始状态
-static void Arm_NONE_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_START_POS,ARM_U2_START_POS,ARM_DJ_START_POS,ARM_MOVE_TIME);
-    }
-}
-
-//底层取块
-static void Arm_LOW_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_LOW_POS,ARM_U2_LOW_POS,ARM_DJ_LOW_POS,ARM_MOVE_TIME);
-    }
-}
-
-//二层取块
-static void Arm_MID_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_MID_POS,ARM_U2_MID_POS,ARM_DJ_MID_POS,ARM_MOVE_TIME);
-    }
-}
-
-//取天空块
-static void Arm_SKY_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_SKY_POS,ARM_U2_SKY_POS,ARM_DJ_SKY_POS,ARM_MOVE_TIME);
-    }
-}
-
-// //储存状态
-// static void Arm_STORT_Process(void)
-// {
-//     if (ArmControl.running == false &&
-//         ArmControl.finish == false)
-//     {
-//         Arm_Interpolation_Start(ARM_U1_STORE_POS,ARM_U2_STORE_POS,ARM_DJ_STORE_POS,ARM_MOVE_TIME);
-//     }
-// }
-
-//底层放块
-static void Arm_LOW1_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_LOW1_POS,ARM_U2_LOW1_POS,ARM_DJ_LOW1_POS,ARM_MOVE_TIME);
-    }
-}
-
-//二层放块
-static void Arm_MID1_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_MID1_POS,ARM_U2_MID1_POS,ARM_DJ_MID1_POS,ARM_MOVE_TIME);
-    }
-}
-
-
-//三层放块
-static void Arm_HIGH_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_HIGH_POS,ARM_U2_HIGH_POS,ARM_DJ_HIGH_POS,ARM_MOVE_SKY_TIME);
-    }
-}
-
-
-//持块状态
-static void Arm_KEEP_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-        Arm_Interpolation_Start(ARM_U1_KEEP_POS,ARM_U2_KEEP_POS,ARM_DJ_KEEP_POS,ARM_MOVE_TIME);
-    }
-}
-
-/*
-自由决定末端执行器坐标
-
-坐标-》关节角-》关节角转成可驱动值
-
-*/
-static void Arm_Position_Process(void)
-{
-    if (ArmControl.running == false &&
-    ArmControl.finish == false)
-    {
-
-        Arm_Interpolation_Start(ARM_U1_KEEP_POS,ARM_U2_KEEP_POS,ARM_DJ_KEEP_POS,ARM_MOVE_TIME);
-    }
-}
-
-
-void Arm_State_Update(void)
-{
-
-    if (Is_reset)
-    {
-        if (ArmControl.state!= ARM_STATE_NONE)
+        if (s_motor_enabled == 0)
         {
-            ArmControl.state = ARM_STATE_NONE;
+            Arm_Motor_Enable();
+            s_motor_enabled = 1;
         }
-            Is_pick=0;
-            Is_place=0;
-            Is_store=0;
-            Is_reset=0;
-            Is_ready=0;
+    }
+    else
+    {
+        if (s_motor_enabled == 1)
+        {
+            Arm_Motor_Disable();
+            s_motor_enabled = 0;
+        }
+    }
+
+    /* 2) 复位:直接调用系统复位函数(不返回) */
+    if (ArmControl.reset)
+    {
+        Sys_reset();
         return;
     }
 
-
-
-    if (Is_ready)
+    /* 夹爪继电器(沿用原逻辑:不受使能门控,失能时也能断开) */
+    if (Is_open)
     {
-        if(level_flag==0)
-        {
-            if (ArmControl.state != ARM_STATE_SKY_READY)
-            {
-            ArmControl.state = ARM_STATE_SKY_READY;
-            }
-        }
-        else if (ArmControl.state != ARM_STATE_READY)
-        {
-            ArmControl.state = ARM_STATE_READY;
- 
-        }
-            Is_pick=0;
-            Is_place=0;
-            Is_store=0;
-            Is_reset=0;
-            Is_ready=0;
+        Relay_ON();
+    }
+    else{
+        Relay_OFF();
+    }
+
+    /* 未使能:不执行状态切换与运动更新,直接return */
+    if (ArmControl.enable == false)
+    {
         return;
     }
 
-        if (Is_keep)
+    /* 3) 模式切换变化沿检测 */
+    if (ArmControl.req_state != ArmControl.state)
     {
-        if (ArmControl.state != ARM_STATE_KEEP)
+        Arm_Pose_t pose;
+        bool target_changed = false;
+
+        ArmControl.state = ArmControl.req_state;
+        Arm_Refresh_Debug_Pose(ArmControl.state);      //调试状态目标值动态写回配置表
+
+        pose = Arm_Pose_Table[ArmControl.state];
+
+        if (ArmControl.state == ARM_CartPos_DEBUG)
         {
-            ArmControl.state = ARM_STATE_KEEP;
- 
+            //笛卡尔模式:末端目标坐标发生改变才启动
+            target_changed = (ArmControl.traj.ctrl.target_x != Arm_Pos_Debug.x) ||
+                             (ArmControl.traj.ctrl.target_y != Arm_Pos_Debug.y);
+            Arm_Pos_Debug.x=ArmControl.traj.ctrl.target_x;
+            Arm_Pos_Debug.y=ArmControl.traj.ctrl.target_y;
+            Arm_Interpolation_Cart_Start(pose, Arm_Pos_Debug.x, Arm_Pos_Debug.y);
         }
-            Is_pick=0;
-            Is_place=0;
-            Is_store=0;
-            Is_reset=0;
-            Is_ready=0;
-            Is_keep=0;
-        return;
+        else
+        {
+            //默认模式:三个电机转角目标值发生改变才启动
+            target_changed = (ArmControl.traj.ctrl.u1_target != pose.u1) ||
+                             (ArmControl.traj.ctrl.u2_target != pose.u2) ||
+                             (ArmControl.traj.ctrl.dj_target != pose.dj);
+            pose.u1=ArmControl.traj.ctrl.u1_start;
+            pose.u2=ArmControl.traj.ctrl.u2_target;
+            pose.dj=ArmControl.traj.ctrl.dj_target;
+            Arm_Interpolation_Start(pose);
+        }
+
+        if (target_changed)
+        {
+            ArmControl.traj.ctrl.time = 0.0f;           //重置已运行的时间
+            ArmControl.running = true;
+            ArmControl.finish  = false;
+        }
     }
 
-
-
-    // if (Is_store)
-    // {
-    //     if (ArmControl.state != ARM_STATE_STORT)
-    //     {
-    //         ArmControl.state = ARM_STATE_STORT;
-    //     }
-    //     Is_pick=0;
-    //     Is_place=0;
-    //     Is_store=0;
-    //     Is_ready=0;
-    //     Is_reset=0;
-    //     return;
-    // }
-
-
-    if (Is_pick==1&&Is_place==0)
+    /* 4) 运动更新 */
+    if (ArmControl.running)
     {
-        ArmState_t new_state;
-
-        switch (level_flag)
-        {
-            case 0:
-                new_state = ARM_STATE_SKY;
-                break;
-
-            case 1:
-                new_state = ARM_STATE_LOW;
-                break;
-
-            case 2:
-                new_state = ARM_STATE_MID;
-                break;
-
-            default:
-                new_state = ARM_STATE_MID;
-                break;
-        }
-
-
-        if (ArmControl.state != new_state)
-        {
-            ArmControl.state = new_state;
-
-        }
-        Is_pick=0;
-        Is_place=0;
-        Is_store=0;
-        Is_ready=0;
-        Is_reset=0;
-
-        return;
+        Arm_Interpolation_Update();
     }
 
-
-   
-    if (Is_place==1&&Is_pick==0)
-    {
-        ArmState_t new_state;
-
-        switch (level_flag)
-        {
-            case 0:
-                new_state = ARM_STATE_SKY_READY;
-                break;
-   
-
-            case 1:
-                new_state = ARM_STATE_LOW1;
-                break;
-
-            case 2:
-                new_state = ARM_STATE_MID1;
-                break;
-
-            case 3:
-                new_state = ARM_STATE_HIGH;
-                break;
-
-            default:
-            new_state = ARM_STATE_LOW1;
-                break;
-        }
-
-
-        if (ArmControl.state != new_state)
-        {
-            ArmControl.state = new_state;
-           
-        }
-
-        Is_pick=0;
-        Is_place=0;
-        Is_store=0;
-        Is_ready=0;
-        Is_reset=0;
-
-        return;
-    }
-
-
-    Is_pick=0;
-    Is_place=0;
-    Is_store=0;
-    Is_ready=0;
-    Is_reset=0;
-    Is_keep=0;
+    /* 运动学遥测(1kHz刷新,供VOFA/调试器观察) */
+    Arm_Kinetics_Data.motor_target = Arm_Debug;
+    Arm_Kinetics_Data.arm_angle.Angle1 = U1_Motor2Geom(Unitree_motors[0].data.position);
+    Arm_Kinetics_Data.arm_angle.Angle2 = U2_Motor2Geom(Unitree_motors[0].data.position,Unitree_motors[1].data.position);
+    Arm_Kinetics_Data.forward_angle.u1_theta = Unitree_motors[0].data.position;
+    Arm_Kinetics_Data.forward_angle.u2_theta = Unitree_motors[1].data.position;
+    Arm_Kinetics_Data.end_coordinate = Forward(Arm_Kinetics_Data.forward_angle);
+    Arm_Kinetics_Data.inverse_angle = Inverse(Arm_Kinetics_Data.end_coordinate);
 }
 
 
 
 
 
-//状态更新
-void Arm_Control_Task(void *argument)
-{
-    (void)argument;
-    for (;;)
-    {
-        osDelay(1);
-        // if (ArmControl.running==1)
-        // {
-        //     ArmControl.state=ArmControl.last_state;
-        // }
-
-        Arm_Kinetics_Data.motor_target=Arm_Debug;
-        Arm_Kinetics_Data.arm_angle.Angle1=U1_Motor2Geom(Unitree_motors[0].data.position);
-        Arm_Kinetics_Data.arm_angle.Angle2=U2_Motor2Geom(Unitree_motors[0].data.position,Unitree_motors[1].data.position);
-        Arm_Kinetics_Data.forward_angle.u1_theta=Unitree_motors[0].data.position;
-        Arm_Kinetics_Data.forward_angle.u2_theta=Unitree_motors[1].data.position;
-        Arm_Kinetics_Data.end_coordinate=Forward(Arm_Kinetics_Data.forward_angle);
-        Arm_Kinetics_Data.inverse_angle=Inverse(Arm_Kinetics_Data.end_coordinate);
-         if (ArmControl.state != ArmControl.last_state)
-        {
-             ArmControl.running = false;
-            ArmControl.finish = false;
-             ArmControl.last_state = ArmControl.state;
-        }
-
-
-
-        if(Is_Sys_reset==1)
-        {
-            Sys_reset();
-            Is_Sys_reset=0;
-        }
-
-        if(Is_open)
-        {
-            Relay_ON();
-        }
-        else{
-            Relay_OFF();
-        }
-
-
-        if(Is_on==1)
-        {
-            if(Is_enable==0)
-            {
-           Arm_Motor_Enable();
-           Is_enable=1;
-            }
-        }
-
-        else{
-            if(Is_enable==1)
-            {
-           Arm_Motor_Disable();
-           Is_enable=0;
-            }
-        }
-
-
-        switch (ArmControl.state)
-        {
-            case ARM_STATE_NONE:
-                Arm_NONE_Process();
-                break;
-
-
-            case ARM_STATE_READY:
-
-                Arm_Ready_Process();
-
-                break;
-
-
-            case ARM_STATE_SKY_READY:
-
-                Arm_sky_Ready_Process();
-                break;
-
-
-            case ARM_STATE_KEEP:
-                Arm_KEEP_Process();
-                break;
-
-            case ARM_STATE_LOW:
-                Arm_LOW_Process();
-                break;
-            
-
-            case ARM_STATE_LOW1:
-                Arm_LOW1_Process();
-                break;
-
-
-            case ARM_STATE_MID:
-                Arm_MID_Process();
-                break;
-
-
-
-            case ARM_STATE_MID1:
-                Arm_MID1_Process();
-                break;
-
-
-            case ARM_STATE_HIGH:
-                Arm_HIGH_Process();
-                break;
-
-            case ARM_STATE_SKY:
-                Arm_SKY_Process();
-                break;
-
-            case ARM_DEBUG:
-                Arm_Debug_Process();
-                break;
-
-            case ARM_Pos_DEBUG:
-                Arm_Pos_Debug_Process();
-                break;
-            case ARM_CartPos_DEBUG:
-                Arm_CartPos_Debug_Process();
-                break;
-            default:
-            ArmControl.running = false;
-                ArmControl.finish = true;
-
-                break;
-        }
-        if(Is_on==1)
-        {
-
-        if (ArmControl.running == true)
-        {
-            Arm_Interpolation_Update();
-        }
-       }
-    }
-}
 
 
 
@@ -794,222 +428,195 @@ void Arm_Motor_Disable(void)
 }
 
 
-
-
-
-
-void Arm_Receive(FDCAN_RxHeaderTypeDef Rxheader, uint8_t *Rx_data)
+//取块目标状态映射(按层数)
+static ArmState_t Arm_Pick_State(uint8_t level)
 {
-    if (Rxheader.IdType == FDCAN_EXTENDED_ID)
-           {
-               switch (Rxheader.Identifier)
-               {
-
-           
-                    //使能失能（改）
-                   case 0x01020211U:
-
-                       if (Rx_data[0] == 'E')
-                       {
-                        Is_on=1;
-                       }
-                       else if (Rx_data[0] == 'D')
-                       {
-                        Is_on  =0;
-                        Is_open=0;
-                       }
-
-                       break;
-
-                                           //系统复位
-                    case 0x010202F0U:
-
-                       if (Rx_data[0] == 'R')
-                       {
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-                           Is_reset = 0U;
-                            Is_keep=0U;
-                           Is_pick = 0U;
-                           Is_Sys_reset=1U;
-                       }
-
-                       break; 
-
-
-                   default:
-
-                       break;
-                }
-
-
-
-                if(Is_on==1)
-                {
-               
-                 switch (Rxheader.Identifier)
-                    {
-
-                    //启动开始，变为持块状态
-                    case 0x010202FFU:
-
-                       if (Rx_data[0] == 3)
-                       {
-                       Is_keep=1;
-                       //Is_ready=1;
-                       }                     
-
-                       break;
-
-
-
-
-
-                   //位置调节（改）
-                   case 0x01020002U:
-
-                       if (Rx_data[0] <= 3U)
-                       {
-                           level_flag = Rx_data[0];
-                       }
-
-                       break;
-
-
-                   //返回零位（改）
-                   case 0x01020200U:
-
-                       if (Rx_data[0] == 3)
-                       {
-                           Is_pick  = 0U;
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-
-                           Is_reset = 1U;
-                           Is_open=0U;
-                           
-                       }
-
-                       break;
-
-
-
-                    //取块准备（改）
-                   case 0x01020301U:
-
-                       if (Rx_data[0] == 'P')
-                       {
-                           Is_pick  = 0U;
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_reset = 0U;
-
-                           Is_ready = 1U;
-                       }
-
-                       break;
-
-
-
-
-                   //取块开始(改)
-                   case 0x01020307U:
-
-                       if (Rx_data[0] == 'T')
-                       {
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-                           Is_reset = 0U;
-
-                           Is_pick = 1U;
-                           Is_open=1U;
-                       }
-
-                       break;
-
-                    //取块完成（改）
-                    case 0x01020309U:
-
-                       if (Rx_data[0] == 'H')
-                       {
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-                           Is_reset = 0U;
-                           Is_keep =1U;
-
-                           Is_pick = 0U;
-                       }
-
-                       break;
-
-
-
-                   //放块准备（改）
-                   case 0x01020308U:
-
-                       if (Rx_data[0] == 'F')
-                       {
-                           Is_pick  = 0U;
-                           Is_place = 1U;
-                           Is_store = 0U;
-                           Is_reset = 0U;
-
-                           Is_ready = 0U;
-                       }
-
-                       break;
-
-
-                    //放块开始（改）
-                   case 0x01020305U:
-
-                       if (Rx_data[0] == 'R')
-                       {
-                           Is_pick  = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-                           Is_reset = 0U;
-
-                           Is_place = 0U;
-                           Is_open=0U;
-                       }
-
-                       break;
-
-
-
-                    //放块完成（改）
-                    case 0x0102030AU:
-
-                       if (Rx_data[0] == 'O')
-                       {
-                           Is_place = 0U;
-                           Is_store = 0U;
-                           Is_ready = 0U;
-                           Is_reset = 0U;
-                            Is_keep=1U;
-                           Is_pick = 0U;
-                       }
-
-                       break;   
-
-                    default:
-
-                       break;
-                }     
-
-               }
-           }
-
+    switch (level)
+    {
+        case 0:
+            return ARM_STATE_SKY;
+
+        case 1:
+            return ARM_STATE_LOW;
+
+        case 2:
+            return ARM_STATE_MID;
+
+        default:
+            return ARM_STATE_MID;
+    }
+}
+
+//放块准备目标状态映射(按层数)
+static ArmState_t Arm_Place_State(uint8_t level)
+{
+    switch (level)
+    {
+        case 0:
+            return ARM_STATE_SKY_READY;
+
+        case 1:
+            return ARM_STATE_LOW1;
+
+        case 2:
+            return ARM_STATE_MID1;
+
+        case 3:
+            return ARM_STATE_HIGH;
+
+        default:
+            return ARM_STATE_LOW1;
+    }
 }
 
 
+//上位机命令接收(FDCAN中断):直接置请求状态/使能/复位,由Arm_Func完成变化沿处理
+void Arm_Receive(FDCAN_RxHeaderTypeDef Rxheader, uint8_t *Rx_data)
+{
+    if (Rxheader.IdType != FDCAN_EXTENDED_ID)
+    {
+        return;
+    }
 
+    //使能/失能 与 系统复位 不受使能状态限制
+    switch (Rxheader.Identifier)
+    {
+        //使能失能
+        case 0x01020211U:
 
+            if (Rx_data[0] == 'E')
+            {
+                ArmControl.enable = true;
+            }
+            else if (Rx_data[0] == 'D')
+            {
+                ArmControl.enable = false;
+                Is_open = 0U;
+            }
+
+            break;
+
+        //系统复位
+        case 0x010202F0U:
+
+            if (Rx_data[0] == 'R')
+            {
+                ArmControl.reset = true;
+            }
+
+            break;
+
+        default:
+
+            break;
+    }
+
+    if (ArmControl.enable == false)
+    {
+        return;
+    }
+
+    switch (Rxheader.Identifier)
+    {
+        //位置调节(层数)
+        case 0x01020002U:
+
+            if (Rx_data[0] <= 3U)
+            {
+                level_flag = Rx_data[0];
+            }
+
+            break;
+
+        //启动开始,变为持块状态
+        case 0x010202FFU:
+
+            if (Rx_data[0] == 3)
+            {
+                ArmControl.req_state = ARM_STATE_KEEP;
+            }
+
+            break;
+
+        //返回零位
+        case 0x01020200U:
+
+            if (Rx_data[0] == 3)
+            {
+                ArmControl.req_state = ARM_STATE_NONE;
+                Is_open = 0U;
+            }
+
+            break;
+
+        //取块准备
+        case 0x01020301U:
+
+            if (Rx_data[0] == 'P')
+            {
+                ArmControl.req_state = (level_flag == 0U)
+                                     ? ARM_STATE_SKY_READY
+                                     : ARM_STATE_READY;
+            }
+
+            break;
+
+        //取块开始
+        case 0x01020307U:
+
+            if (Rx_data[0] == 'T')
+            {
+                ArmControl.req_state = Arm_Pick_State(level_flag);
+                Is_open = 1U;
+            }
+
+            break;
+
+        //取块完成
+        case 0x01020309U:
+
+            if (Rx_data[0] == 'H')
+            {
+                ArmControl.req_state = ARM_STATE_KEEP;
+            }
+
+            break;
+
+        //放块准备
+        case 0x01020308U:
+
+            if (Rx_data[0] == 'F')
+            {
+                ArmControl.req_state = Arm_Place_State(level_flag);
+            }
+
+            break;
+
+        //放块开始(松爪,不改状态)
+        case 0x01020305U:
+
+            if (Rx_data[0] == 'R')
+            {
+                Is_open = 0U;
+            }
+
+            break;
+
+        //放块完成
+        case 0x0102030AU:
+
+            if (Rx_data[0] == 'O')
+            {
+                ArmControl.req_state = ARM_STATE_KEEP;
+            }
+
+            break;
+
+        default:
+
+            break;
+    }
+}
 
 
 

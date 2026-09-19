@@ -65,12 +65,7 @@ const osThreadAttr_t VOFASendTask_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
-osThreadId_t Arm_Control_TaskTaskHandle;
-const osThreadAttr_t Arm_Control_TaskTask_attributes = {
-  .name = "Arm_Control_TaskTask",
-  .stack_size = 512 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
-};
+
 /* USER CODE END FunctionPrototypes */
 
 void Alarm_Task(void *argument);
@@ -114,8 +109,6 @@ void MX_FREERTOS_Init(void) {
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  Arm_Control_TaskTaskHandle=osThreadNew(Arm_Control_Task, NULL, &Arm_Control_TaskTask_attributes);
-
 
   /* USER CODE END RTOS_THREADS */
 

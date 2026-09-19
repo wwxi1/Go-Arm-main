@@ -72,34 +72,8 @@
 #define ARM_DJ_HIGH_POS -161.7f
 
 extern volatile uint8_t level_flag;
-extern volatile uint8_t Is_pick;
-extern volatile uint8_t Is_place;
-extern volatile uint8_t Is_store;
-extern volatile uint8_t Is_ready;
-extern volatile uint8_t Is_reset;
-extern volatile uint8_t Is_on;
 extern volatile uint8_t Is_open;
 extern volatile uint8_t Is_ok;
-extern volatile uint8_t Is_keep;
-extern volatile uint8_t Is_Sys_reset;
-extern volatile uint8_t Is_sky_ready;
-
-typedef struct
-{
-    float ARM_U1_POS;
-    float ARM_U2_POS;
-    float ARM_DJ_ROS;
-} ARM_POS_t;
-
-//笛卡尔差值
-typedef struct
-{
-    float start_x;
-    float start_y;
-    float target_x;
-    float target_y;
-    bool  cartesian;      // true = 笛卡尔模式
-} ArmCart_t;
 
 typedef enum
 {
@@ -115,37 +89,57 @@ typedef enum
     ARM_STATE_HIGH,       // 放三层
     ARM_DEBUG,           // 正运动学调试
     ARM_Pos_DEBUG,       //逆运动学关节坐标系调试
-    ARM_CartPos_DEBUG    //逆运动学笛卡尔坐标系调试
+    ARM_CartPos_DEBUG,    //逆运动学笛卡尔坐标
+    ARM_STATE_COUNT
 } ArmState_t;
 
+typedef enum
+{
+    ARM_MODE_DEFAULT = 0,   // 默认：关节空间直接给电机转角
+    ARM_MODE_CARTESIAN      // 笛卡尔：末端坐标轨迹 + 逐周期逆解
+} ArmMode_t;
+
+// 配置表条目（下标 = ArmState_t 枚举值）
 typedef struct
 {
-    float start_angle;
-    float target;
-} ArmInterpolationPoint_t;
+    float u1;         // 宇树电机1转角 (rad)
+    float u2;         // 宇树电机2转角 (rad)
+    float dj;         // 大疆电机转角 (deg)
+    float move_time;  // 运行时间 (s)
+} Arm_Pose_t;
 
+// 轨迹控制结构体
 typedef struct
 {
-    volatile ArmState_t state;
+    float u1_target, u2_target, dj_target;  // 三个电机目标值
+    float u1_start,  u2_start,  dj_start;   // 三个电机起点（切换时读当前实际位置）
+    float time;        // 运行时间
+    float total_time;  // 总运行时间
+    float dt;          // 运动更新周期
+    float start_x, start_y, target_x, target_y; // 笛卡尔目标（仅 CARTESIAN）
+} ArmTrajCtrl_t;
 
-    volatile ArmState_t last_state;
+// 轨迹规划结构体
+typedef struct
+{
+    ArmTrajCtrl_t ctrl;   // 控制结构体
+    ArmMode_t      mode;  // 运行模式（笛卡尔 / 默认）
+} ArmTraj_t;
 
-    float time;
 
-    float total_time;
+// 机械臂运动控制结构体（重构）
+typedef struct
+{
+    volatile bool        enable;     // 使能
+    volatile bool        reset;      // 复位（系统复位请求）
+    volatile ArmState_t  state;      // 当前状态
+    volatile ArmState_t  req_state;  // 请求状态（变化沿检测源）
 
-    ArmInterpolationPoint_t u1;
+    Arm_Pose_t pose;   // 电机1/2/3 状态配置（来自配置表）
+    ArmTraj_t  traj;   // 轨迹规划结构体
 
-    ArmInterpolationPoint_t u2;
-
-    ArmInterpolationPoint_t dj;
-
-    ArmCart_t Cart;
-
-    volatile bool running;
-
-    volatile bool finish;
-
+    volatile bool running;   // 插补运行中
+    volatile bool finish;    // 插补完成
 } ArmControl_t;
 
 typedef struct
@@ -187,13 +181,14 @@ typedef struct
 
 extern Arm_Kinetics_Data_t Arm_Kinetics_Data;
 extern Arm_Interpolation_t Arm_Debug;
+extern Arm_Interpolation_Pos_t Arm_Pos_Debug;
 extern ArmControl_t ArmControl;
+extern Arm_Pose_t Arm_Pose_Table[ARM_STATE_COUNT];
 
 void Relay_ON(void);
 void Relay_OFF(void);
 void Arm_Control_Init(void);
-void Arm_State_Update(void);
-void Arm_Control_Task(void *argument);
+void Arm_Func(void);
 void Arm_Motor_Enable(void);
 void Arm_Motor_Disable(void);
 void Arm_Receive(FDCAN_RxHeaderTypeDef Rxheader, uint8_t *Rx_data);

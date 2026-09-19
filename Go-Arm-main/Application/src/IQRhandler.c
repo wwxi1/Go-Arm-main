@@ -50,7 +50,7 @@ void TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
            承载 DJI/其他);ZDrive 若配在 CAN1,需注意此处会双重出队。 */
 
       
-         Arm_State_Update();
+         Arm_Func();
 
 
 
