@@ -126,6 +126,15 @@ typedef struct
     ArmMode_t      mode;  // 运行模式（笛卡尔 / 默认）
 } ArmTraj_t;
 
+//机械臂三个电机的引用(指向真实电机对象,由Arm_Control_Init赋值)
+typedef struct
+{
+    UnitreeMotor *U1;
+    UnitreeMotor *U2;
+    DJMotor      *DJ;
+}Arm_Motor;
+
+
 
 // 机械臂运动控制结构体（重构）
 typedef struct
@@ -137,6 +146,7 @@ typedef struct
 
     Arm_Pose_t pose;   // 电机1/2/3 状态配置（来自配置表）
     ArmTraj_t  traj;   // 轨迹规划结构体
+    Arm_Motor arm_motor;
 
     volatile bool running;   // 插补运行中
     volatile bool finish;    // 插补完成

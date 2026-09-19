@@ -152,9 +152,9 @@ static void Arm_Interpolation_Start(Arm_Pose_t pose)
 {
     ArmControl.pose = pose;                              // 更新状态配置（电机1/2/3 + 运行时间）
 
-    ArmControl.traj.ctrl.u1_start = Unitree_motors[0].data.position;
-    ArmControl.traj.ctrl.u2_start = Unitree_motors[1].data.position;
-    ArmControl.traj.ctrl.dj_start = DJmotor[0].valNow.angle_deg;
+    ArmControl.traj.ctrl.u1_start = ArmControl.arm_motor.U1->data.position;
+    ArmControl.traj.ctrl.u2_start = ArmControl.arm_motor.U2->data.position;
+    ArmControl.traj.ctrl.dj_start = ArmControl.arm_motor.DJ->valNow.angle_deg;
 
     ArmControl.traj.ctrl.u1_target = pose.u1;
     ArmControl.traj.ctrl.u2_target = pose.u2;
@@ -171,8 +171,8 @@ static void Arm_Interpolation_Start(Arm_Pose_t pose)
 
 static void Arm_Interpolation_Cart_Start(Arm_Pose_t pose, float x, float y)
 {
-    Unitree_Theta_t now = {Unitree_motors[0].data.position,
-                           Unitree_motors[1].data.position};
+    Unitree_Theta_t now = {ArmControl.arm_motor.U1->data.position,
+                           ArmControl.arm_motor.U2->data.position};
     Vec2 now_pos = Forward(now);                       // 起点 = 当前真实末端
 
     ArmControl.pose = pose;                            // dj + move_time 来自表
@@ -180,7 +180,7 @@ static void Arm_Interpolation_Cart_Start(Arm_Pose_t pose, float x, float y)
     ArmControl.traj.ctrl.start_y  = now_pos.y;
     ArmControl.traj.ctrl.target_x = x;
     ArmControl.traj.ctrl.target_y = y;
-    ArmControl.traj.ctrl.dj_start = DJmotor[0].valNow.angle_deg;
+    ArmControl.traj.ctrl.dj_start = ArmControl.arm_motor.DJ->valNow.angle_deg;
     ArmControl.traj.ctrl.dj_target = pose.dj;
 
     ArmControl.traj.ctrl.time = 0.0f;
@@ -220,17 +220,17 @@ static void Arm_Interpolation_Update(void)
         }
 
         Unitree_Theta_t th = Inverse(p);
-        Unitree_motors[0].cmd.position = th.u1_theta;
-        Unitree_motors[1].cmd.position = th.u2_theta;
-        DJmotor[0].valSet.angle_deg = ArmControl.traj.ctrl.dj_start
+        ArmControl.arm_motor.U1->cmd.position = th.u1_theta;
+        ArmControl.arm_motor.U2->cmd.position = th.u2_theta;
+        ArmControl.arm_motor.DJ->valSet.angle_deg = ArmControl.traj.ctrl.dj_start
             + (ArmControl.traj.ctrl.dj_target - ArmControl.traj.ctrl.dj_start) * s;
     }
 
     else
     {
-    Unitree_motors[0].cmd.position =Target_Quintic_Interpolation(ArmControl.traj.ctrl.u1_start,ArmControl.traj.ctrl.u1_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
-    Unitree_motors[1].cmd.position = Target_Quintic_Interpolation(ArmControl.traj.ctrl.u2_start,ArmControl.traj.ctrl.u2_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
-    DJmotor[0].valSet.angle_deg =  Target_Quintic_Interpolation(ArmControl.traj.ctrl.dj_start,ArmControl.traj.ctrl.dj_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
+    ArmControl.arm_motor.U1->cmd.position =Target_Quintic_Interpolation(ArmControl.traj.ctrl.u1_start,ArmControl.traj.ctrl.u1_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
+    ArmControl.arm_motor.U2->cmd.position = Target_Quintic_Interpolation(ArmControl.traj.ctrl.u2_start,ArmControl.traj.ctrl.u2_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
+    ArmControl.arm_motor.DJ->valSet.angle_deg =  Target_Quintic_Interpolation(ArmControl.traj.ctrl.dj_start,ArmControl.traj.ctrl.dj_target,ArmControl.traj.ctrl.time,ArmControl.traj.ctrl.total_time);
     }
 
     ArmControl.traj.ctrl.time += ArmControl.traj.ctrl.dt;
@@ -244,14 +244,14 @@ static void Arm_Interpolation_Update(void)
             p_end.x = ArmControl.traj.ctrl.target_x;
             p_end.y = ArmControl.traj.ctrl.target_y;
             Unitree_Theta_t last = Inverse(p_end);
-            Unitree_motors[0].cmd.position = last.u1_theta;
-            Unitree_motors[1].cmd.position = last.u2_theta;
+            ArmControl.arm_motor.U1->cmd.position = last.u1_theta;
+            ArmControl.arm_motor.U2->cmd.position = last.u2_theta;
         }
         else{
-        Unitree_motors[0].cmd.position = ArmControl.traj.ctrl.u1_target;
-        Unitree_motors[1].cmd.position = ArmControl.traj.ctrl.u2_target;
+        ArmControl.arm_motor.U1->cmd.position = ArmControl.traj.ctrl.u1_target;
+        ArmControl.arm_motor.U2->cmd.position = ArmControl.traj.ctrl.u2_target;
         }
-        DJmotor[0].valSet.angle_deg = ArmControl.traj.ctrl.dj_target;
+        ArmControl.arm_motor.DJ->valSet.angle_deg = ArmControl.traj.ctrl.dj_target;
         ArmControl.running = false;
         ArmControl.finish = true;
     }
@@ -262,6 +262,11 @@ static void Arm_Interpolation_Update(void)
 //机械臂位置、模式初始化
 void Arm_Control_Init(void)
 {
+    //电机配置:把结构体成员指向真实电机对象
+    ArmControl.arm_motor.U1 = &Unitree_motors[0];
+    ArmControl.arm_motor.U2 = &Unitree_motors[1];
+    ArmControl.arm_motor.DJ = &DJmotor[0];
+
     ArmControl.enable    = false;
     ArmControl.reset     = false;
     ArmControl.state     = ARM_STATE_NONE;
@@ -301,6 +306,14 @@ void Arm_Control_Init(void)
 void Arm_Func(void)
 {
     static uint8_t s_motor_enabled = 0;
+
+    /* 0) 未完成初始化(电机引用为空)直接返回:TIM2在Arm_Control_Init之前就已启动 */
+    if (ArmControl.arm_motor.U1 == NULL ||
+        ArmControl.arm_motor.U2 == NULL ||
+        ArmControl.arm_motor.DJ == NULL)
+    {
+        return;
+    }
 
     /* 1) 使能判断:先收敛电机使能沿 */
     if (ArmControl.enable)
@@ -390,10 +403,10 @@ void Arm_Func(void)
 
     /* 运动学遥测(1kHz刷新,供VOFA/调试器观察) */
     Arm_Kinetics_Data.motor_target = Arm_Debug;
-    Arm_Kinetics_Data.arm_angle.Angle1 = U1_Motor2Geom(Unitree_motors[0].data.position);
-    Arm_Kinetics_Data.arm_angle.Angle2 = U2_Motor2Geom(Unitree_motors[0].data.position,Unitree_motors[1].data.position);
-    Arm_Kinetics_Data.forward_angle.u1_theta = Unitree_motors[0].data.position;
-    Arm_Kinetics_Data.forward_angle.u2_theta = Unitree_motors[1].data.position;
+    Arm_Kinetics_Data.arm_angle.Angle1 = U1_Motor2Geom(ArmControl.arm_motor.U1->data.position);
+    Arm_Kinetics_Data.arm_angle.Angle2 = U2_Motor2Geom(ArmControl.arm_motor.U1->data.position,ArmControl.arm_motor.U2->data.position);
+    Arm_Kinetics_Data.forward_angle.u1_theta = ArmControl.arm_motor.U1->data.position;
+    Arm_Kinetics_Data.forward_angle.u2_theta = ArmControl.arm_motor.U2->data.position;
     Arm_Kinetics_Data.end_coordinate = Forward(Arm_Kinetics_Data.forward_angle);
     Arm_Kinetics_Data.inverse_angle = Inverse(Arm_Kinetics_Data.end_coordinate);
 }
@@ -409,21 +422,21 @@ void Arm_Func(void)
 
 void Arm_Motor_Enable(void)
 {
-    Unitree_motors[0].enable = true;
-    Unitree_motors[1].enable = true;
+    ArmControl.arm_motor.U1->enable = true;
+    ArmControl.arm_motor.U2->enable = true;
 
-    DJmotor[0].Begin = true;
+    ArmControl.arm_motor.DJ->Begin = true;
 
-    DJmotor[0].MODE_Set = DJ_Position;
+    ArmControl.arm_motor.DJ->MODE_Set = DJ_Position;
 }
 
 
 void Arm_Motor_Disable(void)
 {
-    Unitree_motors[0].enable = false;
-    Unitree_motors[1].enable = false;
-    DJmotor[0].MODE_Set = DJ_Disable;
-    DJmotor[0].Begin = false;
+    ArmControl.arm_motor.U1->enable = false;
+    ArmControl.arm_motor.U2->enable = false;
+    ArmControl.arm_motor.DJ->MODE_Set = DJ_Disable;
+    ArmControl.arm_motor.DJ->Begin = false;
 
 }
 
