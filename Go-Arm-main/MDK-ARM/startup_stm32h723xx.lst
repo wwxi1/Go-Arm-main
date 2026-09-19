@@ -1273,19 +1273,19 @@ ARM Macro Assembler    Page 20
               00000400 
               00000200 
               00000000 
-Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M7.fp.dp --depen
-d=27rc_proj_template\startup_stm32h723xx.d -o27rc_proj_template\startup_stm32h7
-23xx.o -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/STM32H7
-xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FreeRTOS/Source/include -
-I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewares/Thir
-d_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I../Drivers/CMSIS/RTOS2/Include
- -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Include -I..
-/Middlewares/ST/ARM/DSP/Inc -I../Motor/inc -I../Application/inc -I../BSP/inc -I
-../Algorithm/inc -I../Config -I../Communication/Bluetooth -I../Communication/VO
-FA -I.\RTE\_27RC_Proj_Template -ID:\keil5\ARM\PACK\ARM\CMSIS\5.9.0\CMSIS\Core\I
-nclude --predefine="__UVISION_VERSION SETA 537" --predefine="_RTE_ SETA 1" --pr
-edefine="STM32H723xx SETA 1" --predefine="_RTE_ SETA 1" --list=startup_stm32h72
-3xx.lst startup_stm32h723xx.s
+Command Line: --debug --xref --diag_suppress=9931,A1950W --cpu=Cortex-M7.fp.dp 
+--depend=27rc_proj_template\startup_stm32h723xx.d -o27rc_proj_template\startup_
+stm32h723xx.o -I../Core/Inc -I../Drivers/STM32H7xx_HAL_Driver/Inc -I../Drivers/
+STM32H7xx_HAL_Driver/Inc/Legacy -I../Middlewares/Third_Party/FreeRTOS/Source/in
+clude -I../Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 -I../Middlewar
+es/Third_Party/FreeRTOS/Source/portable/RVDS/ARM_CM4F -I../Drivers/CMSIS/RTOS2/
+Include -I../Drivers/CMSIS/Device/ST/STM32H7xx/Include -I../Drivers/CMSIS/Inclu
+de -I../Middlewares/ST/ARM/DSP/Inc -I../Motor/inc -I../Application/inc -I../BSP
+/inc -I../Algorithm/inc -I../Config -I../Communication/Bluetooth -I../Communica
+tion/VOFA -I.\RTE\_27RC_Proj_Template -ID:\keil_packs\ARM\CMSIS\6.1.0\CMSIS\Cor
+e\Include --predefine="__UVISION_VERSION SETA 542" --predefine="STM32H723xx SET
+A 1" --predefine="_RTE_ SETA 1" --list=startup_stm32h723xx.lst startup_stm32h72
+3xx.s
 
 
 

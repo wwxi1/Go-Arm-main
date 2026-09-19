@@ -72,17 +72,22 @@
 #define ARM_DJ_HIGH_POS -161.7f
 
 extern volatile uint8_t level_flag;
-extern volatile uint8_t Is_pick;
-extern volatile uint8_t Is_place;
-extern volatile uint8_t Is_store;
-extern volatile uint8_t Is_ready;
-extern volatile uint8_t Is_reset;
 extern volatile uint8_t Is_on;
 extern volatile uint8_t Is_open;
-extern volatile uint8_t Is_ok;
-extern volatile uint8_t Is_keep;
 extern volatile uint8_t Is_Sys_reset;
-extern volatile uint8_t Is_sky_ready;
+
+typedef enum
+{
+    ARM_CMD_NONE = 0,
+    ARM_CMD_READY,
+    ARM_CMD_PICK,
+    ARM_CMD_PLACE,
+    ARM_CMD_KEEP,
+    ARM_CMD_RESET
+} ArmCommand_t;
+
+/* 待处理动作：更新前连续收到多个动作时，以最后一个为准，不排队。 */
+extern volatile ArmCommand_t arm_cmd;
 
 typedef struct
 {
@@ -172,7 +177,6 @@ typedef struct
     float Angle2;
     float Angle3;
 }Arm_Angle;
-
 
 
 typedef struct 
