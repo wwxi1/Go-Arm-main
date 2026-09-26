@@ -1,5 +1,7 @@
 # VOFA+ 打波调试说明
 
+当前机械臂已接入真实目标/反馈；通道表和逐步操作见 [机械臂调试入门](机械臂调试入门.md)。下方 API 示例仅演示用法，不是当前任务的全部实现。
+
 [VOFA+](https://www.vofa.plus/) 是一款串口上位机调试软件,支持波形/表格/示波器显示。
 本工程在 `Communication/VOFA/vofa.c` 提供基于 **JustFloat** 协议的发送模块:
 
@@ -26,8 +28,8 @@
 #define BOARD_VOFA_UART        (huart9)    /* VOFA+ debug data output */
 ```
 
-- `APP_VOFA_ENABLE = 0` 时不编译发送函数(头文件里函数声明被 `#if` 包住),
-  模板任务 `VOFA_SendTask` 也会休眠停发;
+- `APP_VOFA_ENABLE = 0` 时任务不再调用通道更新和发送函数，并休眠停发；
+  这不等于自动从 Keil 工程中移除 `vofa.c`;
 - `BOARD_VOFA_UART` 可以是任意已配 DMA 发送的 UART 句柄。
 
 ## 3. API 参考(Communication/VOFA/vofa.h)

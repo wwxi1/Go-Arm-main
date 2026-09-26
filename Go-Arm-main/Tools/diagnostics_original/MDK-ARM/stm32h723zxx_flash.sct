@@ -14,10 +14,7 @@ LR_IROM1 0x08000000 0x00080000  {  ; load region size_region
    .ANY (+XO)
    .ANY (+RO)
   }
-  RW_EVENT_REC 0x2001F000 UNINIT 0x1000 {
-    EventRecorder.o (+ZI)
-  }
-  RW_IRAM1 0x20000400 0x0001EC00  {  ; DTCM, 前 1KB 是向量表
+  RW_IRAM1 0x20000400 0x0001FC00  {  ; DTCM, 前 1KB 是向量表
    .ANY (+RW +ZI)
   }
   RW_RAM_AXI0 0x24000000 0x00020000  {

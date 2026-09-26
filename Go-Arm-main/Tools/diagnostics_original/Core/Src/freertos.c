@@ -110,7 +110,7 @@ void MX_FREERTOS_Init(void) {
   AlarmTaskHandle = osThreadNew(Alarm_Task, NULL, &AlarmTask_attributes);
 
   /* creation of VOFASendTask */
-  VOFASendTaskHandle = osThreadNew(VOFA_SendTask, NULL, &VOFASendTask_attributes);
+  // VOFASendTaskHandle = osThreadNew(VOFA_SendTask, NULL, &VOFASendTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */

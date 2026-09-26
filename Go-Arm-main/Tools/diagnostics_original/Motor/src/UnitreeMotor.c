@@ -25,8 +25,6 @@
     }
 
 UnitreeMotor Unitree_motors[UNITREE_MOTOR_NUM];
-volatile UnitreeLinkStats Unitree_link[UNITREE_MOTOR_NUM];
-volatile uint32_t Unitree_rx_bad_frames;
 __RAM_D1_ ALIGN_32B uint8_t Unitree_UART7_RxBuffer[UNITREE_RX_BUFFER_SIZE] = {0};
 static __RAM_D1_ ALIGN_32B uint8_t s_unitree_uart7_rx_buf2[UNITREE_RX_BUFFER_SIZE] = {0};
 static RingBuffer_t s_unitree_rx_queue;
@@ -338,14 +336,6 @@ static void UnitreeMotor_ParseRxQueue(void)
                 Unitree_motors[rx_data->id].data.bad_msg = bad_msg;
                 Unitree_motors[rx_data->id].data.position -=
                     Unitree_motors[rx_data->id].zero_offset;
-                Unitree_link[rx_data->id].last_valid_rx_ms = HAL_GetTick();
-                Unitree_link[rx_data->id].rx_count++;
-                Unitree_link[rx_data->id].seen = 1U;
-            }
-            else
-            {
-                /* A bad CRC makes its motor ID untrustworthy; count bus-wide. */
-                Unitree_rx_bad_frames++;
             }
 
             s_unitree_frame_started = false;

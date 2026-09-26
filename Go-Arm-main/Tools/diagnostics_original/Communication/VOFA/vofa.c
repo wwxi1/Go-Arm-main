@@ -10,17 +10,13 @@ typedef struct _vofa_msg
 } VOFATxMsgTypedef;
 
 static VOFATxMsgTypedef VofaTxPack = {{0}, {VOFA_SUFFIX1, VOFA_SUFFIX2, VOFA_SUFFIX3, VOFA_SUFFIX4}};
-#define VOFA_BUFFER_STRIDE ((VOFA_PACKET_SIZE + 31U) & ~31U)
-static __RAM_D1_ ALIGN_32B uint8_t vofa_buffer[2][VOFA_BUFFER_STRIDE] = {0};
+static __RAM_D1_ ALIGN_32B uint8_t vofa_buffer[VOFA_PACKET_SIZE][2] = {0};
 static bool vofa_buffer_num = 0;
 static volatile bool vofa_dma_busy = 0;
-volatile uint32_t vofa_sent_count = 0;
-volatile uint32_t vofa_skipped_count = 0;
-volatile uint32_t vofa_start_error_count = 0;
 
 bool VOFA_Channel_Update(uint8_t channel, VOFA_DataType_t type, void *data)
 {
-    if (channel >= VOFA_CHANNEL_NUM || data == NULL)
+    if (channel >= VOFA_CHANNEL_NUM)
     {
         return false;
     }
@@ -67,23 +63,12 @@ void VOFA_Update(void)
 {
     if (vofa_dma_busy)
     {
-        ++vofa_skipped_count;
         return;
     }
     uint8_t *sending_vofa_buffer=(vofa_buffer[vofa_buffer_num]);
     vofa_buffer_num = !vofa_buffer_num;
 
     memcpy(sending_vofa_buffer, &VofaTxPack, (VOFA_PACKET_SIZE));
-    SCB_CleanDCache_by_Addr((uint32_t *)sending_vofa_buffer, VOFA_BUFFER_STRIDE);
-    /* Set before DMA starts: completion may preempt this task. Single TX owner. */
-    vofa_dma_busy = true;
-    if (HAL_UART_Transmit_DMA(&BOARD_VOFA_UART, sending_vofa_buffer, VOFA_PACKET_SIZE) == HAL_OK)
-    {
-        ++vofa_sent_count;
-    }
-    else
-    {
-        vofa_dma_busy = false;
-        ++vofa_start_error_count;
-    }
+    SCB_CleanDCache_by_Addr((uint32_t *)(sending_vofa_buffer), (VOFA_PACKET_SIZE));
+    HAL_UART_Transmit_DMA(&BOARD_VOFA_UART, sending_vofa_buffer, (VOFA_PACKET_SIZE));
 }

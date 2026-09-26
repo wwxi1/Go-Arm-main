@@ -1,0 +1,10 @@
+*** Using Compiler 'V6.23', folder: 'D:\Keil_v5\ARM\ARMCLANG\Bin'
+Build target '27RC_Proj_Template'
+compiling freertos.c...
+linking...
+.\stm32h723zxx_flash.sct(30): warning: L6314W: No section matches pattern *(.RAM_D3).
+Program Size: Code=96500 RO-data=1696 RW-data=864 ZI-data=29900  
+Finished: 0 information, 1 warning and 0 error messages.
+FromELF: creating hex file...
+"27RC_Proj_Template\27RC_Proj_Template.axf" - 0 Error(s), 1 Warning(s).
+Build Time Elapsed:  00:00:07

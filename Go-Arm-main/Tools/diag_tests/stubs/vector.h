@@ -1,0 +1,1 @@
+/* VOFA header includes vector.h but this test does not use vector operations. */

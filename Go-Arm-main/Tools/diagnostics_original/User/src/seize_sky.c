@@ -1,7 +1,6 @@
 #include "seize_sky.h"
 #include "kinematics.h"
 #include "DJmotor.h"
-#include "arm_diag.h"
 
 #define ARM_INTERPOLATION_DT 0.001f
 #define ARM_EPSILON 0.0001f
@@ -40,23 +39,6 @@ Arm_Interpolation_Pos_t table[10] = {
 };
 
 static uint8_t Is_enable = 0;
-
-/* Numerical/reachability checks, not a mechanical collision envelope. */
-static bool Arm_Pos_Valid(float x, float y)
-{
-    if (!isfinite(x) || !isfinite(y)) return false;
-    float r2 = x * x + y * y;
-    float outer = ARM_U1_LENTH + ARM_U2_LENTH;
-    float inner = fabsf(ARM_U1_LENTH - ARM_U2_LENTH);
-    return isfinite(r2) && r2 <= outer * outer && r2 >= inner * inner;
-}
-
-static void Arm_RejectTarget(void)
-{
-    ArmControl.running = false;
-    ArmControl.finish = true;
-    ArmDiag_End(ARM_RESULT_INVALID_TARGET);
-}
 
 static void Sys_reset(void)
 {
@@ -126,13 +108,6 @@ static float Target_Quintic_Interpolation(float start_angle, float target,
 // 开始轨迹计算
 static void Arm_Interpolation_Start(float u1_target, float u2_target, float dj_target, float move_time)
 {
-    if (!isfinite(u1_target) || !isfinite(u2_target) || !isfinite(dj_target) ||
-        !isfinite(move_time) || move_time <= 0.0f ||
-        !isfinite(Unitree_motors[0].data.position) ||
-        !isfinite(Unitree_motors[1].data.position) || !isfinite(DJmotor[0].valNow.angle_deg)) {
-        Arm_RejectTarget();
-        return;
-    }
     ArmControl.u1.start_angle = Unitree_motors[0].data.position;
     ArmControl.u2.start_angle = Unitree_motors[1].data.position;
     ArmControl.dj.start_angle = DJmotor[0].valNow.angle_deg;
@@ -147,12 +122,10 @@ static void Arm_Interpolation_Start(float u1_target, float u2_target, float dj_t
 
     ArmControl.running = true;
     ArmControl.finish = false;
-    ArmDiag_Start();
 }
 
 static void Arm_Interpolation_Pos_Start(float pos_x, float pos_y, float dj_target, float move_time)
 {
-    if (!Arm_Pos_Valid(pos_x, pos_y)) { Arm_RejectTarget(); return; }
     Vec2 Pos_target;
     Pos_target.x = pos_x;
     Pos_target.y = pos_y;
@@ -166,16 +139,11 @@ static void Arm_Interpolation_Pos_Start(float pos_x, float pos_y, float dj_targe
 
 static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y, float dj_target, float move_time)
 {
-    if (!Arm_Pos_Valid(pos_x, pos_y) || !isfinite(dj_target) ||
-        !isfinite(move_time) || move_time <= 0.0f) { Arm_RejectTarget(); return; }
     Unitree_Theta_t now;
     now.u1_theta = Unitree_motors[0].data.position;
     now.u2_theta = Unitree_motors[1].data.position;
 
     Vec2 now_pos = Forward(now); // 起点为此刻真实末端位置
-    if (!Arm_Pos_Valid(now_pos.x, now_pos.y) || !isfinite(DJmotor[0].valNow.angle_deg)) {
-        Arm_RejectTarget(); return;
-    }
 
     ArmControl.Cart.start_x = now_pos.x;
     ArmControl.Cart.start_y = now_pos.y;
@@ -190,7 +158,6 @@ static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y, float dj_targ
     ArmControl.total_time = move_time;
     ArmControl.running = true;
     ArmControl.finish = false;
-    ArmDiag_Start();
 }
 
 // 轨迹点更新
@@ -210,16 +177,16 @@ static void Arm_Interpolation_Update(void)
         p.y = ArmControl.Cart.start_y + (ArmControl.Cart.target_y - ArmControl.Cart.start_y) * s;
 
         // 可达域检查
-        if (!Arm_Pos_Valid(p.x, p.y))
+        float r = sqrtf(p.x * p.x + p.y * p.y);
+        if (r > (ARM_U1_LENTH + ARM_U2_LENTH) ||
+            r < fabsf(ARM_U1_LENTH - ARM_U2_LENTH))
         {
-            Arm_RejectTarget();
+            ArmControl.running = false;
+            ArmControl.finish = true;
             return;
         }
 
         Unitree_Theta_t th = Inverse(p);
-        if (!isfinite(th.u1_theta) || !isfinite(th.u2_theta)) {
-            Arm_RejectTarget(); return;
-        }
         Unitree_motors[0].cmd.position = th.u1_theta;
         Unitree_motors[1].cmd.position = th.u2_theta;
         DJmotor[0].valSet.angle_deg = ArmControl.dj.start_angle + (ArmControl.dj.target - ArmControl.dj.start_angle) * s;
@@ -254,7 +221,6 @@ static void Arm_Interpolation_Update(void)
         DJmotor[0].valSet.angle_deg = ArmControl.dj.target;
         ArmControl.running = false;
         ArmControl.finish = true;
-        ArmDiag_End(ARM_RESULT_COMMANDS_SENT);
     }
 }
 
@@ -278,7 +244,6 @@ void Arm_Control_Init(void)
 
     ArmControl.dj.start_angle = 0.0f;
     ArmControl.dj.target = ARM_DJ_START_POS;
-    ArmDiag_Init();
 }
 
 
@@ -364,9 +329,6 @@ void Arm_State_Update(void)
     default:
         break;
     }
-    /* A new explicit command may restart the same pose after cancellation. */
-    if (command != ARM_CMD_NONE && Is_on && !ArmControl.running)
-        ArmControl.finish = false;
 }
 
 // 状态更新
@@ -376,7 +338,6 @@ void Arm_Control_Task(void *argument)
     for (;;)
     {
         osDelay(1);
-        ArmDiag_Tick();
         // if (ArmControl.running==1)
         // {
         //     ArmControl.state=ArmControl.last_state;
@@ -391,7 +352,6 @@ void Arm_Control_Task(void *argument)
         Arm_Kinetics_Data.inverse_angle = Inverse(Arm_Kinetics_Data.end_coordinate);
         if (ArmControl.state != ArmControl.last_state)
         {
-            if (ArmControl.running) ArmDiag_End(ARM_RESULT_SUPERSEDED);
             ArmControl.running = false;
             ArmControl.finish = false;
             ArmControl.last_state = ArmControl.state;
@@ -399,7 +359,6 @@ void Arm_Control_Task(void *argument)
 
         if (Is_Sys_reset == 1)
         {
-            ArmDiag_End(ARM_RESULT_RESET_REQUESTED);
             Sys_reset();
             Is_Sys_reset = 0;
         }
@@ -430,7 +389,6 @@ void Arm_Control_Task(void *argument)
                 Is_enable = 0;
             }
         }
-        if (!Is_on) continue; /* Do not prepare/start trajectories while disabled. */
         if (ArmControl.state < 10)
         {
             if (ArmControl.running == false &&
@@ -480,9 +438,6 @@ void Arm_Motor_Enable(void)
 
 void Arm_Motor_Disable(void)
 {
-    if (ArmControl.running) ArmDiag_End(ARM_RESULT_CANCELLED);
-    ArmControl.running = false;
-    ArmControl.finish = true;
     Unitree_motors[0].enable = false;
     Unitree_motors[1].enable = false;
     DJmotor[0].MODE_Set = DJ_Disable;

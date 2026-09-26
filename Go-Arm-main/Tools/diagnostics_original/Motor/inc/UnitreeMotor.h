@@ -136,14 +136,6 @@ extern "C"
 #pragma pack()
 
 #if USE_UNITREE
-    /* Kept outside data: parsing/copying a frame must not reset link history. */
-    typedef struct {
-        uint32_t last_valid_rx_ms;
-        uint32_t rx_count;
-        uint32_t seen;
-    } UnitreeLinkStats;
-    extern volatile UnitreeLinkStats Unitree_link[UNITREE_MOTOR_NUM];
-    extern volatile uint32_t Unitree_rx_bad_frames;
     extern UnitreeMotor Unitree_motors[UNITREE_MOTOR_NUM];
     extern __RAM_D1_ ALIGN_32B uint8_t Unitree_UART7_RxBuffer[UNITREE_RX_BUFFER_SIZE];
 
