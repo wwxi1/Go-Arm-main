@@ -1,0 +1,36 @@
+Event, Time (sec), Component, Event Property, Value
+0, 0.00000000, , Init Event, Restart Count=0x00000005
+1, 0.00000000, , Start Event, 
+2, 0.00000000, Arm events, Boot, state=0
+3, 3.95000000, Arm events, Enabled, state=0
+4, 6.89700000, Arm events, TrajectoryStart, state=1  duration_ms=3000
+5, 9.89700000, Arm events, CommandsSent, state=1  result=2
+6, 10.10000000, Arm events, XYArrivalSuccess, state=1  error_mm_rounded=7
+7, 12.66000000, Arm events, TrajectoryStart, state=2  duration_ms=2000
+8, 14.65900000, Arm events, CommandsSent, state=2  result=2
+9, 14.87000000, Arm events, XYArrivalSuccess, state=2  error_mm_rounded=8
+10, 18.58700000, Arm events, TrajectoryStart, state=3  duration_ms=2000
+11, 20.58600000, Arm events, CommandsSent, state=3  result=2
+12, 20.79000000, Arm events, XYArrivalSuccess, state=3  error_mm_rounded=4
+13, 22.47600000, Arm events, TrajectoryStart, state=4  duration_ms=2000
+14, 24.47500000, Arm events, CommandsSent, state=4  result=2
+15, 24.68000000, Arm events, XYArrivalSuccess, state=4  error_mm_rounded=6
+16, 26.18000000, Arm events, TrajectoryStart, state=5  duration_ms=2000
+17, 28.17900000, Arm events, CommandsSent, state=5  result=2
+18, 28.39000000, Arm events, XYArrivalSuccess, state=5  error_mm_rounded=3
+19, 31.69000000, Arm events, TrajectoryStart, state=6  duration_ms=2000
+20, 33.68900000, Arm events, CommandsSent, state=6  result=2
+21, 33.90000000, Arm events, XYArrivalSuccess, state=6  error_mm_rounded=6
+22, 36.75000000, Arm events, TrajectoryStart, state=7  duration_ms=2000
+23, 38.74900000, Arm events, CommandsSent, state=7  result=2
+24, 38.96000000, Arm events, XYArrivalSuccess, state=7  error_mm_rounded=7
+25, 41.10000000, Arm events, TrajectoryStart, state=8  duration_ms=2000
+26, 43.09900000, Arm events, CommandsSent, state=8  result=2
+27, 43.31000000, Arm events, XYArrivalSuccess, state=8  error_mm_rounded=3
+28, 44.94900000, Arm events, TrajectoryStart, state=9  duration_ms=2000
+29, 46.94800000, Arm events, CommandsSent, state=9  result=2
+30, 47.15000000, Arm events, XYArrivalSuccess, state=9  error_mm_rounded=2
+31, 50.23500000, Arm events, TrajectoryStart, state=0  duration_ms=3000
+32, 53.23500000, Arm events, CommandsSent, state=0  result=2
+33, 53.44000000, Arm events, XYArrivalSuccess, state=0  error_mm_rounded=1
+34, 64.70000000, Arm events, Disabled, state=0

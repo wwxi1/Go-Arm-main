@@ -1,10 +1,9 @@
 /**
  * @file    UnitreeMotor.c
- * @brief   Unitree GO-M8010-6 RS485 motor driver.
+ * @brief   宇树GO-M8010-6电机的RS485驱动。
  *
- * Ported from the 4-bus sample to the current single-UART7 RS485 hardware.
- * UART7 is initialized with HAL_RS485Ex_Init(), so DE direction is handled by
- * the peripheral; no manual GPIO toggling is required.
+ * 从四总线示例适配到当前单UART7的RS485硬件。
+ * UART7使用HAL_RS485Ex_Init初始化，DE方向由外设控制，不必手动切换GPIO。
  */
 #include "includes.h"
 #include "UnitreeMotor.h"
@@ -125,6 +124,8 @@ void UnitreeMotor_Init(void)
     UnitreeMotorCmd_t default_cmd;
 
     memset(&default_cmd, 0, sizeof(default_cmd));
+    /* 重启驱动时清空上一轮回包统计。首帧只记时间，第二帧才产生第一个间隔。 */
+    memset((void *)Unitree_link, 0, sizeof(Unitree_link));
     default_cmd.mode = UNITREE_MOTOR_MODE_IDLE;
     default_cmd.kp = MOTOR_UNITREE_DEFAULT_KP;
     default_cmd.kd = MOTOR_UNITREE_DEFAULT_KW;
@@ -186,7 +187,8 @@ void UnitreeMotor_EncodeFrame(UnitreeMotorCmd_t *cmd)
     UNITREE_SATURATE(cmd->speed, -804.00f, 804.00f);
     UNITREE_SATURATE(cmd->position, -411774.0f, 411774.0f);
 
-    /* 协议实测为转子侧量:上层关节语义需在此做减速比换算 */
+    /* 上层位置/速度按关节端表达，协议按转子端编码：发送时乘6.33，反馈时除6.33。
+     * kp/kd 目前原样编码；它们不是已标定的关节刚度/阻尼。修改增益需要另行测试。 */
     tor_des = (int16_t)(cmd->torque * UNITREE_GEAR_RATIO * 256.0f);
     spd_des = (int16_t)((cmd->speed * UNITREE_GEAR_RATIO) / UNITREE_2PI * 256.0f);
     pos_des = (int32_t)((cmd->position * UNITREE_GEAR_RATIO) / UNITREE_2PI * 32768.0f);
@@ -338,13 +340,19 @@ static void UnitreeMotor_ParseRxQueue(void)
                 Unitree_motors[rx_data->id].data.bad_msg = bad_msg;
                 Unitree_motors[rx_data->id].data.position -=
                     Unitree_motors[rx_data->id].zero_offset;
-                Unitree_link[rx_data->id].last_valid_rx_ms = HAL_GetTick();
-                Unitree_link[rx_data->id].rx_count++;
-                Unitree_link[rx_data->id].seen = 1U;
+                /* 只更新 CRC 和 ID 都通过的回包。间隔=本帧时刻-上一有效帧时刻；
+                 * age_ms=快照时刻-最近有效帧时刻，两者回答不同的问题。 */
+                volatile UnitreeLinkStats *link = &Unitree_link[rx_data->id];
+                uint32_t received_at_ms = HAL_GetTick();
+                if (link->seen)
+                    link->last_gap_ms = received_at_ms - link->last_valid_rx_ms;
+                link->last_valid_rx_ms = received_at_ms;
+                link->rx_count++;
+                link->seen = 1U;
             }
             else
             {
-                /* A bad CRC makes its motor ID untrustworthy; count bus-wide. */
+                /* CRC错误时电机ID也不可信，因此计入总线级错误，不能归给某台电机。 */
                 Unitree_rx_bad_frames++;
             }
 
@@ -547,6 +555,8 @@ void UnitreeMotor_Func(void)
         }
     }
 
+    /* TIM2每1 ms调用一次，每次发一台：两台电机各自的命令周期约2 ms。
+     * 定时发送不保证成功回包，通信状态仍以实际有效反馈的新鲜度判断。 */
     UnitreeMotor_SendCommand(&Unitree_motors[s_unitree_tx_index]);
 
     s_unitree_tx_index++;

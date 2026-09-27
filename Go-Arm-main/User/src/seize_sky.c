@@ -8,7 +8,6 @@
 #define ARM_MOVE_TIME 1.0f
 #define ARM_Debug_MOVE_TIME 6.0f
 #define ARM_Pos_Debug_MOVE_TIME 30.0f
-#define ARM_MOVE_SKY_TIME 2.0f
 
 // 五次多项式轨迹参数(归一化时间域 t∈[0,1],末速度/末加速度固定为0)
 // 起始速度 s'(0) 与起始加速度 s''(0) 可配置;取0时为平滑起步(等价smoothstep)
@@ -23,25 +22,26 @@ volatile uint8_t Is_Sys_reset = 0;
 
 volatile Vec2 Target_Vec;
 ArmControl_t ArmControl;
-Arm_Interpolation_t Arm_Debug = {0, 0, 0, ARM_Debug_MOVE_TIME};
+Arm_Interpolation_t Arm_Debug = {0, 0, 0, ARM_Debug_MOVE_TIME}; // 模式10：两宇树目标rad、DJI目标deg、耗时s
+/* 模式11/12共用：x/y单位mm，默认(0,0)不可达，使用前需填写已验证的目标。 */
 Arm_Interpolation_Pos_t Arm_Pos_Debug = {0, 0, 0, ARM_Pos_Debug_MOVE_TIME};
 Arm_Kinetics_Data_t Arm_Kinetics_Data = {0};
 Arm_Interpolation_Pos_t table[10] = {
-    {90.095, 299.402, 0.0, 5},      // 返回初始位
-    {-385.885, 586.883, -233.0, 5}, // 大地块准备
-    {-447.509, 446.617, -222.0, 5}, // 底层取块
-    {-299.395, 515.693, -143.7, 5}, // 中层取块
-    {-474.523, 335.910, -205.0, 5}, // 取天空块
-    {-114.655, 683.097, -270.0, 5}, // 持块／搬运姿态
-    {-447.509, 446.617, -222.0, 5}, // 天空块准备
-    {-356.299, 634.917, -241.7, 5}, // 底层放块
-    {-181.535, 664.000, -153.7, 5}, // 中层放块
-    {-88.258, 760.978, -161.7, 5}   // 高层放块
+    {90.095, 299.402, 0.0, 3},      // 返回初始位
+    {-385.885, 586.883, -233.0, 2}, // 大地块准备
+    {-447.509, 446.617, -222.0, 2}, // 底层取块
+    {-299.395, 515.693, -143.7, 2}, // 中层取块
+    {-474.523, 335.910, -205.0, 2}, // 取天空块
+    {-114.655, 683.097, -270.0, 2}, // 持块／搬运姿态
+    {-447.509, 446.617, -222.0, 2}, // 天空块准备
+    {-356.299, 634.917, -241.7, 2}, // 底层放块
+    {-181.535, 664.000, -153.7, 2}, // 中层放块
+    {-88.258, 760.978, -161.7, 2}   // 高层放块
 };
 
 static uint8_t Is_enable = 0;
 
-/* Numerical/reachability checks, not a mechanical collision envelope. */
+/* 只检查数值和几何可达性，不包含碰撞检测及机械限位。 */
 static bool Arm_Pos_Valid(float x, float y)
 {
     if (!isfinite(x) || !isfinite(y)) return false;
@@ -193,6 +193,21 @@ static void Arm_Interpolation_Cart_Start(float pos_x, float pos_y, float dj_targ
     ArmDiag_Start();
 }
 
+bool Arm_TestUnreachableTarget(void)
+{
+    /* 测试点距原点913 mm，比最大臂展812.92 mm再远100 mm。
+     * 不把它加入正常动作表，不使能电机。若可达性检查意外接受这个点，
+     * 直接拒绝执行测试，绝不继续尝试生成这条轨迹。 */
+    if (Is_on || Is_enable || ArmControl.running ||
+        Unitree_motors[0].enable || Unitree_motors[1].enable) return false;
+    float x = ARM_U1_LENTH + ARM_U2_LENTH + 100.0f;
+    if (Arm_Pos_Valid(x, 0.0f)) return false;
+    ArmDiag_Record(ARM_EVT_TEST_UNREACHABLE, (uint32_t)(x + 0.5f));
+    /* Cart_Start第一条检查即拒绝；发生在反解、轨迹起点、电机目标更新之前。 */
+    Arm_Interpolation_Cart_Start(x, 0.0f, DJmotor[0].valSet.angle_deg, 5.0f);
+    return true;
+}
+
 // 轨迹点更新
 static void Arm_Interpolation_Update(void)
 {
@@ -309,22 +324,6 @@ static void Arm_CartPos_Debug_Process(void)
     }
 }
 
-/*
-自由决定末端执行器坐标
-
-坐标-》关节角-》关节角转成可驱动值
-
-*/
-static void Arm_Position_Process(void)
-{
-    if (ArmControl.running == false &&
-        ArmControl.finish == false)
-    {
-
-        Arm_Interpolation_Start(ARM_U1_KEEP_POS, ARM_U2_KEEP_POS, ARM_DJ_KEEP_POS, ARM_MOVE_TIME);
-    }
-}
-
 void Arm_State_Update(void)
 {
     /* 一次取走命令，避免读出后清零时覆盖刚到达的新命令。 */
@@ -364,7 +363,7 @@ void Arm_State_Update(void)
     default:
         break;
     }
-    /* A new explicit command may restart the same pose after cancellation. */
+    /* 动作取消后，再收到明确命令时允许重新执行同一个目标。 */
     if (command != ARM_CMD_NONE && Is_on && !ArmControl.running)
         ArmControl.finish = false;
 }
@@ -377,10 +376,6 @@ void Arm_Control_Task(void *argument)
     {
         osDelay(1);
         ArmDiag_Tick();
-        // if (ArmControl.running==1)
-        // {
-        //     ArmControl.state=ArmControl.last_state;
-        // }
 
         Arm_Kinetics_Data.motor_target = Arm_Debug;
         Arm_Kinetics_Data.arm_angle.Angle1 = U1_Motor2Geom(Unitree_motors[0].data.position);
@@ -430,7 +425,7 @@ void Arm_Control_Task(void *argument)
                 Is_enable = 0;
             }
         }
-        if (!Is_on) continue; /* Do not prepare/start trajectories while disabled. */
+        if (!Is_on) continue; /* 未使能时不准备或启动轨迹。 */
         if (ArmControl.state < 10)
         {
             if (ArmControl.running == false &&

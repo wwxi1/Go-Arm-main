@@ -11,7 +11,7 @@
 #define ARM_U1_LENTH 389.5f
 #define ARM_U2_LENTH 423.42f
 
-// 小臂角度减速比: 小臂几何角 = (大臂电机角 - 小臂电机角) * ARM_U2_RATIO
+// 小臂几何角 = ARM_U2_ZERO_POS - (大臂电机角 + 小臂电机角) * ARM_U2_RATIO
 #define ARM_U2_RATIO (2.0f / 3.0f)
 
 // 二维向量(末端坐标,单位 mm)

@@ -58,17 +58,24 @@ extern "C"
 /* ------------------------------------------------------------------ */
 /* Unitree GO-M8010-6 (RS485)                                          */
 /* 当前硬件只有 UART7 一路 RS485,同一总线上电机 ID 从 0 开始。          */
-/* 电机带绝对编码器，驱动默认不上电自动清零；上电后需按机械零位 SetZero。*/
+/* 当前实现：初始化时 set_zero=true，首帧有效反馈到来后把当时姿态作为软件零点。
+ * 这不是机械回零；重启时机械姿态不同，两个实验的角度基准也会不同。 */
 /* ------------------------------------------------------------------ */
 #define MOTOR_UNITREE_COUNT 2U
 #define MOTOR_UNITREE_UART 7U
+/* 电机转子/关节输出减速比：关节转 1 rad 时转子约转 6.33 rad。
+ * 角度、速度和力矩的协议换算在 UnitreeMotor.c 中完成。 */
 #define MOTOR_UNITREE_REDUCTION_RATIO 6.33f
 #define RS_485_U7_GPIO_Port GPIOG
 #define RS_485_U7_Pin GPIO_PIN_1
 #define UNITREE_MOTOR_NUM MOTOR_UNITREE_COUNT
 #define UNITREE_RX_BUFFER_SIZE 64U
+/* 当前值直接写入电机协议的 kp/kd 字段；尚未按减速比换算成指定的
+ * 关节刚度/阻尼。若驱动器在转子侧计算 PD，则关节侧增益约乘
+ * 6.33^2=40.1；这是条件推导，仍需核对驱动器定义和实测。
+ * 改这两个数会改变实际控制效果，需单独带保护调试。 */
 #define MOTOR_UNITREE_DEFAULT_KP 4.8f
-#define MOTOR_UNITREE_DEFAULT_KW 0.024f
+#define MOTOR_UNITREE_DEFAULT_KW 0.024f /* 历史名称 KW，实际传给 cmd.kd */
 
 #ifdef __cplusplus
 }

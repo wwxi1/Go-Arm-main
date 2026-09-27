@@ -1,0 +1,58 @@
+Event, Time (sec), Component, Event Property, Value
+0, 0.00000000, , Init Event, Restart Count=0x00000001
+1, 0.00000000, , Start Event, 
+2, 0.00000000, Arm events, Boot, state=0
+3, 0.00000000, , Init Event, Restart Count=0x00000002
+4, 0.00000000, , Start Event, 
+5, 0.00000000, Arm events, Boot, state=0
+6, 5.72600000, Arm events, ManualSnapshot, state=0
+7, 14.27600000, Arm events, ManualSnapshot, state=0
+8, 283.27000000, Arm events, Enabled, state=0
+9, 410.85800000, Arm events, TrajectoryStart, state=1  duration_ms=5000
+10, 415.85800000, Arm events, CommandsSent_ArrivalUnverified, state=1  result=2
+11, 424.00900000, Arm events, TrajectoryStart, state=2  duration_ms=5000
+12, 429.00900000, Arm events, CommandsSent_ArrivalUnverified, state=2  result=2
+13, 431.79100000, Arm events, TrajectoryStart, state=3  duration_ms=5000
+14, 436.79100000, Arm events, CommandsSent_ArrivalUnverified, state=3  result=2
+15, 439.07600000, Arm events, TrajectoryStart, state=4  duration_ms=5000
+16, 440.58900000, Arm events, Superseded, state=5  result=5
+17, 440.58900000, Arm events, TrajectoryStart, state=5  duration_ms=5000
+18, 445.58900000, Arm events, CommandsSent_ArrivalUnverified, state=5  result=2
+19, 447.55500000, Arm events, TrajectoryStart, state=6  duration_ms=5000
+20, 452.55500000, Arm events, CommandsSent_ArrivalUnverified, state=6  result=2
+21, 454.44100000, Arm events, TrajectoryStart, state=7  duration_ms=5000
+22, 459.44100000, Arm events, CommandsSent_ArrivalUnverified, state=7  result=2
+23, 461.05500000, Arm events, TrajectoryStart, state=8  duration_ms=5000
+24, 466.05500000, Arm events, CommandsSent_ArrivalUnverified, state=8  result=2
+25, 468.13900000, Arm events, TrajectoryStart, state=9  duration_ms=5000
+26, 473.13900000, Arm events, CommandsSent_ArrivalUnverified, state=9  result=2
+27, 475.28600000, Arm events, TrajectoryStart, state=0  duration_ms=5000
+28, 480.28600000, Arm events, CommandsSent_ArrivalUnverified, state=0  result=2
+29, 488.90000000, Arm events, Disabled, state=0
+30, 500.42000000, Arm events, Enabled, state=0
+31, 508.98000000, Arm events, Disabled, state=0
+32, 509.18400000, , Init Event, Restart Count=0x00000003
+33, 509.18400000, , Start Event, 
+34, 509.18400000, Arm events, Boot, state=0
+35, 517.14400000, Arm events, Enabled, state=0
+36, 541.79000000, Arm events, TrajectoryStart, state=1  duration_ms=5000
+37, 546.79000000, Arm events, CommandsSent_ArrivalUnverified, state=1  result=2
+38, 548.96300000, Arm events, TrajectoryStart, state=2  duration_ms=5000
+39, 553.96300000, Arm events, CommandsSent_ArrivalUnverified, state=2  result=2
+40, 554.51900000, Arm events, TrajectoryStart, state=3  duration_ms=5000
+41, 559.51900000, Arm events, CommandsSent_ArrivalUnverified, state=3  result=2
+42, 560.35200000, Arm events, TrajectoryStart, state=4  duration_ms=5000
+43, 562.69100000, Arm events, Superseded, state=5  result=5
+44, 562.69100000, Arm events, TrajectoryStart, state=5  duration_ms=5000
+45, 567.69100000, Arm events, CommandsSent_ArrivalUnverified, state=5  result=2
+46, 568.72700000, Arm events, TrajectoryStart, state=6  duration_ms=5000
+47, 573.72700000, Arm events, CommandsSent_ArrivalUnverified, state=6  result=2
+48, 574.77800000, Arm events, TrajectoryStart, state=7  duration_ms=5000
+49, 579.77800000, Arm events, CommandsSent_ArrivalUnverified, state=7  result=2
+50, 580.39700000, Arm events, TrajectoryStart, state=8  duration_ms=5000
+51, 585.39700000, Arm events, CommandsSent_ArrivalUnverified, state=8  result=2
+52, 587.40000000, Arm events, TrajectoryStart, state=9  duration_ms=5000
+53, 592.40000000, Arm events, CommandsSent_ArrivalUnverified, state=9  result=2
+54, 593.28400000, Arm events, TrajectoryStart, state=0  duration_ms=5000
+55, 598.28400000, Arm events, CommandsSent_ArrivalUnverified, state=0  result=2
+56, 607.39400000, Arm events, Disabled, state=0

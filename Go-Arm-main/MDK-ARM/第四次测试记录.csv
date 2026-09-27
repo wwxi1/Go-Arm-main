@@ -1,0 +1,25 @@
+Event, Time (sec), Component, Event Property, Value
+0, 0.00000000, , Init Event, Restart Count=0x00000003
+1, 0.00000000, , Start Event, 
+2, 0.00000000, Arm events, Boot, state=0
+3, 5.80000000, Arm events, TestUnreachableTarget, state=0  target_x_mm_rounded=913  target_y_mm=0
+4, 5.80000000, Arm events, InvalidTarget, state=0  result=3
+5, 10.68600000, Arm events, TestXYOffsetArmed, state=0  check_offset_x_mm=50
+6, 17.57000000, Arm events, Enabled, state=0
+7, 21.84900000, Arm events, TrajectoryStart, state=1  duration_ms=5000
+8, 26.84900000, Arm events, CommandsSent, state=1  result=2
+9, 26.84900000, Arm events, TestXYOffsetApplied, state=1  check_offset_x_mm=50
+10, 28.85000000, Arm events, XYArrivalTimeout, state=1  error_mm_rounded=55
+11, 30.64300000, Arm events, TrajectoryStart, state=2  duration_ms=5000
+12, 35.64300000, Arm events, CommandsSent, state=2  result=2
+13, 35.85000000, Arm events, XYArrivalSuccess, state=2  error_mm_rounded=7
+14, 40.15700000, Arm events, TrajectoryStart, state=3  duration_ms=5000
+15, 45.15700000, Arm events, CommandsSent, state=3  result=2
+16, 45.36000000, Arm events, XYArrivalSuccess, state=3  error_mm_rounded=4
+17, 46.30300000, Arm events, TrajectoryStart, state=10  duration_ms=6000
+18, 52.30300000, Arm events, CommandsSent, state=10  result=2
+19, 52.51000000, Arm events, XYArrivalSuccess, state=10  error_mm_rounded=2
+20, 54.57300000, Arm events, InvalidTarget, state=11  result=3
+21, 58.09900000, Arm events, TrajectoryStart, state=0  duration_ms=5000
+22, 62.13400000, Arm events, Cancelled, state=0  result=4
+23, 62.14000000, Arm events, Disabled, state=0

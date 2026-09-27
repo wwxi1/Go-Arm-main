@@ -1,0 +1,254 @@
+[
+  {
+    "window_s": [
+      612,
+      615
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          -1.5825094301513325,
+          0.010255944532844041
+        ],
+        "osc_error_rms_deg": 0.2034261551159962,
+        "osc_torque_rms_nm": 0.7146812926862355,
+        "error_torque_corr": -0.9942587209198224,
+        "dominant_hz": 3.515625
+      },
+      {
+        "error_range_deg": [
+          -0.9842269004757283,
+          0.20529077799537412
+        ],
+        "osc_error_rms_deg": 0.04887114337131828,
+        "osc_torque_rms_nm": 0.17295382295728423,
+        "error_torque_corr": -0.9778660659452055,
+        "dominant_hz": 2.34375
+      }
+    ]
+  },
+  {
+    "window_s": [
+      625,
+      628
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.38628814547720247,
+          1.1149185735450629
+        ],
+        "osc_error_rms_deg": 0.05243462356330359,
+        "osc_torque_rms_nm": 0.18582242539682892,
+        "error_torque_corr": -0.9832013403903865,
+        "dominant_hz": 3.90625
+      },
+      {
+        "error_range_deg": [
+          -0.601548389107851,
+          -0.38090234220297053
+        ],
+        "osc_error_rms_deg": 0.01699554837512109,
+        "osc_torque_rms_nm": 0.06500836886153154,
+        "error_torque_corr": -0.913500036527035,
+        "dominant_hz": 3.90625
+      }
+    ]
+  },
+  {
+    "window_s": [
+      637,
+      640
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          -0.5054060710848973,
+          1.0082338320917146
+        ],
+        "osc_error_rms_deg": 0.05673037328337959,
+        "osc_torque_rms_nm": 0.2004525587564219,
+        "error_torque_corr": -0.9851073204390064,
+        "dominant_hz": 3.515625
+      },
+      {
+        "error_range_deg": [
+          -1.0323553552667175,
+          -0.36382819990807086
+        ],
+        "osc_error_rms_deg": 0.042014008310694975,
+        "osc_torque_rms_nm": 0.1505587149478865,
+        "error_torque_corr": -0.9612047068172321,
+        "dominant_hz": 8.203125
+      }
+    ]
+  },
+  {
+    "window_s": [
+      650,
+      653
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.282926559235594,
+          0.7738940938831993
+        ],
+        "osc_error_rms_deg": 0.054847595698972046,
+        "osc_torque_rms_nm": 0.19264656886379086,
+        "error_torque_corr": -0.9828766971162475,
+        "dominant_hz": 3.90625
+      },
+      {
+        "error_range_deg": [
+          -0.9823934355313092,
+          -0.6295087295102353
+        ],
+        "osc_error_rms_deg": 0.04836749943564334,
+        "osc_torque_rms_nm": 0.17157069618130083,
+        "error_torque_corr": -0.9743771961055475,
+        "dominant_hz": 4.296875
+      }
+    ]
+  },
+  {
+    "window_s": [
+      656,
+      659
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.20615021468806963,
+          0.9040701049369253
+        ],
+        "osc_error_rms_deg": 0.055929836880564784,
+        "osc_torque_rms_nm": 0.19354479223041587,
+        "error_torque_corr": -0.984751114284149,
+        "dominant_hz": 3.125
+      },
+      {
+        "error_range_deg": [
+          -0.5964490647311887,
+          -0.3042405892144692
+        ],
+        "osc_error_rms_deg": 0.010971628883532356,
+        "osc_torque_rms_nm": 0.04677705156347049,
+        "error_torque_corr": -0.8071837031992259,
+        "dominant_hz": 3.125
+      }
+    ]
+  },
+  {
+    "window_s": [
+      692.5,
+      695.5
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          -1.5922497126685566,
+          -0.08674581018280751
+        ],
+        "osc_error_rms_deg": 0.20310542505681248,
+        "osc_torque_rms_nm": 0.7136236432019989,
+        "error_torque_corr": -0.9918640833935903,
+        "dominant_hz": 2.34375
+      },
+      {
+        "error_range_deg": [
+          -1.0310375523379154,
+          0.20145196076799696
+        ],
+        "osc_error_rms_deg": 0.0511777070952844,
+        "osc_torque_rms_nm": 0.18064196653496217,
+        "error_torque_corr": -0.9774489646448802,
+        "dominant_hz": 3.515625
+      }
+    ]
+  },
+  {
+    "window_s": [
+      731,
+      734
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.3665783973246952,
+          0.9785546183039368
+        ],
+        "osc_error_rms_deg": 0.03639701222512436,
+        "osc_torque_rms_nm": 0.12934667588190132,
+        "error_torque_corr": -0.978002674510124,
+        "dominant_hz": 2.34375
+      },
+      {
+        "error_range_deg": [
+          -0.5953604449204383,
+          -0.37574572204679435
+        ],
+        "osc_error_rms_deg": 0.014296446063923439,
+        "osc_torque_rms_nm": 0.05544210616927565,
+        "error_torque_corr": -0.8718145291146838,
+        "dominant_hz": 2.34375
+      }
+    ]
+  },
+  {
+    "window_s": [
+      617,
+      618
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.33231552117587904,
+          0.34274335304725456
+        ],
+        "osc_error_rms_deg": 0.0010930182869190047,
+        "osc_torque_rms_nm": 0.024061816539750387,
+        "error_torque_corr": 0.06669508989426089,
+        "dominant_hz": 5.0
+      },
+      {
+        "error_range_deg": [
+          -0.7780766857876568,
+          -0.765929980530884
+        ],
+        "osc_error_rms_deg": 0.001173670943827271,
+        "osc_torque_rms_nm": 0.02912923703478668,
+        "error_torque_corr": -0.13172647351785674,
+        "dominant_hz": 4.0
+      }
+    ]
+  },
+  {
+    "window_s": [
+      736,
+      737
+    ],
+    "motors": [
+      {
+        "error_range_deg": [
+          0.24654373924479012,
+          0.2551954019512663
+        ],
+        "osc_error_rms_deg": 0.0011344450149669227,
+        "osc_torque_rms_nm": 0.02343671074674408,
+        "error_torque_corr": -0.06659959578267458,
+        "dominant_hz": 11.0
+      },
+      {
+        "error_range_deg": [
+          -0.52884004490575,
+          -0.5236261289700594
+        ],
+        "osc_error_rms_deg": 0.0010652617429882394,
+        "osc_torque_rms_nm": 0.024453222692198538,
+        "error_torque_corr": -0.010014995169249395,
+        "dominant_hz": 23.0
+      }
+    ]
+  }
+]

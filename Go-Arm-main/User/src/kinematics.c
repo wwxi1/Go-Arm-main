@@ -9,7 +9,7 @@
  *
  * 角度约定(标定后若符号反了,只需修改下面四个转换函数):
  *   大臂几何角 theta1 = u1 + ARM_U1_ZERO_POS
- *   小臂几何角 theta2 = (u1 - u2) * ARM_U2_RATIO + ARM_U2_ZERO_POS
+ *   小臂几何角 theta2 = ARM_U2_ZERO_POS - (u1 + u2) * ARM_U2_RATIO
  *
  *   theta1: 大臂与 +x 轴夹角(方向与 u1 一致)
  *   theta2: 小臂相对大臂的夹角(肘关节角,方向与 u2 相反)

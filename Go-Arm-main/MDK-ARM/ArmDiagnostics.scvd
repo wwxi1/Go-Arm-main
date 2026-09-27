@@ -7,7 +7,7 @@
     </group>
     <event id="0x3000" level="Op" property="Boot" value="state=%d[val1]"/>
     <event id="0x3001" level="Op" property="TrajectoryStart" value="state=%d[val1], duration_ms=%d[val2]"/>
-    <event id="0x3002" level="Op" property="CommandsSent_ArrivalUnverified" value="state=%d[val1], result=%d[val2]"/>
+    <event id="0x3002" level="Op" property="CommandsSent" value="state=%d[val1], result=%d[val2]"/>
     <event id="0x3003" level="Error" property="InvalidTarget" value="state=%d[val1], result=%d[val2]"/>
     <event id="0x3004" level="Op" property="Cancelled" value="state=%d[val1], result=%d[val2]"/>
     <event id="0x3005" level="Op" property="Superseded" value="state=%d[val1], result=%d[val2]"/>
@@ -18,5 +18,20 @@
     <event id="0x300A" level="Op" property="Enabled" value="state=%d[val1]"/>
     <event id="0x300B" level="Op" property="Disabled" value="state=%d[val1]"/>
     <event id="0x300C" level="Op" property="ManualSnapshot" value="state=%d[val1]"/>
+    <event id="0x300D" level="Op" property="XYArrivalSuccess" value="state=%d[val1], error_mm_rounded=%d[val2]"/>
+    <event id="0x300E" level="Error" property="XYArrivalTimeout" value="state=%d[val1], error_mm_rounded=%d[val2]"/>
+    <event id="0x300F" level="Op" property="XYArrivalAborted" value="state=%d[val1], reason=%d[val2]"/>
+    <event id="0x3010" level="Op" property="TestUnreachableTarget" value="state=%d[val1], target_x_mm_rounded=%d[val2], target_y_mm=0"/>
+    <event id="0x3011" level="Op" property="TestXYOffsetArmed" value="state=%d[val1], check_offset_x_mm=%d[val2]"/>
+    <event id="0x3012" level="Op" property="TestXYOffsetApplied" value="state=%d[val1], check_offset_x_mm=%d[val2]"/>
+    <event id="0x3013" level="Op" property="TestRequestRefused" value="state=%d[val1], request=%d[val2]"/>
+    <event id="0x3014" level="Op" property="TestCancelled" value="state=%d[val1]"/>
+    <!-- 附加行用seq关联同一份快照；mrad和mNm除以1000，mm_x10除以10。 -->
+    <event id="0x3015" level="Op" property="SnapshotContext" value="seq=%u[val1], state=%d[val2], sample_ms=%u[val3], timeout_ms=%u[val4]"/>
+    <event id="0x3016" level="Op" property="SnapshotLink" value="seq=%u[val1], motor=%u[val2], age_ms=%u[val3], drive_error=%u[val4]"/>
+    <event id="0x3017" level="Op" property="SnapshotAngles" value="seq=%u[val1], motor=%u[val2], target_mrad=%d[val3], feedback_mrad=%d[val4]"/>
+    <event id="0x3018" level="Op" property="SnapshotLoad" value="seq=%u[val1], motor=%u[val2], speed_mrad_s=%d[val3], torque_mNm=%d[val4]"/>
+    <event id="0x3019" level="Op" property="SnapshotXYGoal" value="seq=%u[val1], x_mm_x10=%d[val2], y_mm_x10=%d[val3], tolerance_mm_x10=%d[val4]"/>
+    <event id="0x301A" level="Op" property="SnapshotXYFeedback" value="seq=%u[val1], x_mm_x10=%d[val2], y_mm_x10=%d[val3], valid=%u[val4]"/>
   </events>
 </component_viewer>

@@ -84,7 +84,7 @@ View → Watch Windows → Watch 1，在空白 Name 行双击输入变量，每�
 8. 如果只看到 `0x300C`，先检查SCVD是否添加成功；这个编号就是手动快照，并不表示故障。
 9. 添加 `g_arm_diag.log_count`、`g_arm_diag.log`。展开结构体，看到同一次记录的目标、反馈、年龄等。这是RAM快照；事件窗口不会自动展开所有结构体成员。
 
-这一步通过后，再观察正常动作的 TrajectoryStart 和 CommandsSent_ArrivalUnverified。后者仅表示指令发完、到位尚未验证，不表示判定到位失败。旧显示名称 CommandsSent_NOT_Arrived 容易误解，现已修正；事件ID和控制逻辑不变。
+这一步通过后，再观察正常动作的 TrajectoryStart、CommandsSent，以及随后独立出现的 XYArrivalSuccess / XYArrivalTimeout / XYArrivalAborted。CommandsSent仍只表示指令发完；二维到位验证采用10 mm容差、200 ms驻留，详见[到位成功事件](到位成功事件.md)。旧CSV中的CommandsSent_ArrivalUnverified没有验证过到位，不能当成功或失败。
 事件不是每10 ms刷一条，静止且没有异常/请求时没有新行是正常现象。
 
 ## 7. 看不到数据时按顺序查
@@ -115,7 +115,22 @@ View → Watch Windows → Watch 1，在空白 Name 行双击输入变量，每�
 
 ### 两个时间变量为什么可能显示相等
 
-`Unitree_link[i].last_valid_rx_ms` 仅在收到有效回包时赋值；`g_arm_diag.latest.time_ms` 在诊断任务取得快照时赋值。两者都取HAL毫秒时钟，但触发条件和存储位置不同。Watch逐项读取，接收更新可能发生在两项读取之间，因此界面上这两个数不保证与保存的age_ms组成同一时刻的等式。稳定回包下age_ms长期保持1或2毫秒可以是正常的采样相位现象。若要逐帧回包间隔，需要另行增加接收端统计，当前未实现。
+`Unitree_link[i].last_valid_rx_ms` 仅在收到有效回包时赋值；`g_arm_diag.latest.time_ms` 在诊断任务取得快照时赋值。两者都取HAL毫秒时钟，但触发条件和存储位置不同。Watch逐项读取，接收更新可能发生在两项读取之间，因此界面上这两个数不保证与保存的age_ms组成同一时刻的等式。稳定回包下age_ms长期保持1或2毫秒可以是正常的采样相位现象。逐帧回包间隔见下面的统计量。
+
+### 现在如何看电机反馈的实际间隔
+
+日常只需 Watch `g_arm_comm_ok`。它每10 ms检查两台宇树的反馈年龄：均收到过有效反馈且年龄不超过 `g_diag_rx_timeout_ms` 时为true，否则为false。当前阈值默认10 ms（调试候选值）；禁用机构后也能验证断线/恢复事件。阈值设0表示关闭监测，此时bool为false。bool不代表驱动器无报错、机械正常或已经到位，且不是自动停机保护。
+
+本工程在 **CRC 和电机 ID 都有效的回包**处记录时间。只有需要排查时才添加以下变量：
+
+| Watch 表达式 | 含义 |
+|---|---|
+| `Unitree_link[0].last_gap_ms` | 电机0最近两帧有效反馈相隔多少毫秒；不足两帧时为0；电机1将 `[0]` 改为 `[1]` |
+| `g_arm_diag.latest.age_ms[0]` | 取快照时距最近一次有效反馈过了多久，**不是**两帧间隔 |
+
+第四次测试后已删除百分位统计及256样本窗口。旧Watch中的 `g_arm_diag.rx_gap_*` 和 `.timing.last_gap_ms` 可以直接删掉。TIM2每1 ms调用一次发送函数，两台电机轮询，因此每台的正常反馈间隔约2 ms；发送节拍不保证回包成功，仍需以有效回包年龄检查断线。`last_gap_ms` 在断线期间保持旧值，`age_ms` 则会增大，日常由 `g_arm_comm_ok` 汇总判断。
+
+VOFA 当前6路数据只有两电机的目标角、反馈角和反馈力矩，没有逐帧接收时间戳。VOFA 设定的 `Δt=10 ms` 是**显示用的发送任务周期**，不能拿来当电机回包周期。当前驱动会以首帧有效反馈时的姿态设软件零位，并没有机械回零动作。
 
 - [Arm：事件窗口与SCVD配置](https://arm-software.github.io/CMSIS-View/latest/er_use.html)
 - [Keil：Watch窗口](https://www.keil.com/support/man/docs/uv4/uv4_db_dbg_watchwin.asp)

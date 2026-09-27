@@ -1,14 +1,11 @@
 /**
  * @file    UnitreeMotor.h
- * @brief   Unitree GO-M8010-6 RS485 motor driver.
+ * @brief   宇树GO-M8010-6电机的RS485驱动。
  *
- * The GO motor protocol layer (wire frames and runtime command/feedback
- * structures) is kept in this header so the driver does not depend on a
- * separate protocol header.
+ * 本文件集中定义协议帧、运行时指令和反馈结构体，无需另一个协议头文件。
  *
- * NOTE: GO-M8010-6 has an absolute encoder. This driver does NOT perform
- * auto zero on power-up; call UnitreeMotor_SetZero() at the mechanical zero
- * before enabling position control.
+ * 初始化会将每台电机的set_zero置为true，以首次有效反馈姿态建立软件零位。
+ * 这不等于机械寻零；跨上电周期比较角度之前，需要确认上电姿态相同。
  */
 #ifndef UNITREEMOTOR_H
 #define UNITREEMOTOR_H
@@ -53,8 +50,8 @@ extern "C"
         int16_t torque_des; /* 期望关节输出力矩, N.m (q8) */
         int16_t speed_des;  /* 期望关节输出速度, rad/s (q8) */
         int32_t pos_des;    /* 期望关节输出位置, rad (q15) */
-        int16_t kp;         /* 关节刚度, q15 */
-        int16_t kd;         /* 关节阻尼, q15 */
+        int16_t kp;         /* 驱动器协议 kp 原始编码, q15 */
+        int16_t kd;         /* 驱动器协议 kd 原始编码, q15 */
     } UnitreeMotorWireCmd_t;
 
     typedef struct
@@ -98,8 +95,8 @@ extern "C"
         float torque;   /* 期望关节输出力矩, N.m */
         float speed;    /* 期望关节输出速度, rad/s */
         float position; /* 期望关节输出位置, rad */
-        float kp;       /* 关节刚度 0~25.599 */
-        float kd;       /* 关节阻尼 0~25.599 */
+        float kp;       /* 原样写入驱动协议的 kp，尚非校准后的关节刚度 */
+        float kd;       /* 原样写入驱动协议的 kd，尚非校准后的关节阻尼 */
         UnitreeMotorControlFrame_t frame;
     } UnitreeMotorCmd_t;
 
@@ -136,11 +133,12 @@ extern "C"
 #pragma pack()
 
 #if USE_UNITREE
-    /* Kept outside data: parsing/copying a frame must not reset link history. */
+    /* 独立于data保存，防止接收新帧时复制结构体覆盖通信历史。 */
     typedef struct {
         uint32_t last_valid_rx_ms;
         uint32_t rx_count;
         uint32_t seen;
+        uint32_t last_gap_ms; /* 最近两帧有效反馈的间隔；不足两帧时为0，仅排障使用 */
     } UnitreeLinkStats;
     extern volatile UnitreeLinkStats Unitree_link[UNITREE_MOTOR_NUM];
     extern volatile uint32_t Unitree_rx_bad_frames;

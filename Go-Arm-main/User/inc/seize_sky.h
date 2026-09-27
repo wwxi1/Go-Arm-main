@@ -88,6 +88,8 @@ typedef enum
 
 /* 待处理动作：更新前连续收到多个动作时，以最后一个为准，不排队。 */
 extern volatile ArmCommand_t arm_cmd;
+/* 诊断任务专用：禁用时走真实笛卡尔入口，提交固定的几何不可达点。 */
+bool Arm_TestUnreachableTarget(void);
 
 typedef struct
 {
@@ -118,9 +120,9 @@ typedef enum
     ARM_STATE_LOW1,      // 放一层
     ARM_STATE_MID1,      // 放二层
     ARM_STATE_HIGH,       // 放三层
-    ARM_DEBUG,           // 正运动学调试
-    ARM_Pos_DEBUG,       //逆运动学关节坐标系调试
-    ARM_CartPos_DEBUG    //逆运动学笛卡尔坐标系调试
+    ARM_DEBUG,          // 10：读取Arm_Debug目标角，关节插值；默认角度全0，并非机械回零
+    ARM_Pos_DEBUG,      // 11：读取Arm_Pos_Debug的XY，终点反解后做关节插值
+    ARM_CartPos_DEBUG   // 12：读取同一组XY，末端沿笛卡尔直线插值；默认(0,0)不可达
 } ArmState_t;
 
 typedef struct

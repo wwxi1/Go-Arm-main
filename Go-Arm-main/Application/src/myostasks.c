@@ -36,6 +36,8 @@ void Alarm_Task(void *argument)
 
 void VOFA_SendTask(void *argument)
 {
+    /* freertos.c 已创建此任务。APP_VOFA_ENABLE=1 时每轮取6个float并发一帧。
+     * 修改波形内容去 ArmDiag_FillVofa；这里负责把通道交给发送库。 */
     (void)argument;
 
     for (;;)
@@ -43,6 +45,7 @@ void VOFA_SendTask(void *argument)
 #if APP_VOFA_ENABLE
         float channels[6];
         ArmDiag_FillVofa(channels);
+        /* 更新通道缓存，不是在这里逐个发送UART。 */
         for (uint8_t ch = 0; ch < 6U; ++ch)
             VOFA_Channel_Update(ch, VOFA_TYPE_FLOAT, &channels[ch]);
 #endif
@@ -58,7 +61,7 @@ void VOFA_SendTask(void *argument)
         (void)BT_Serv_Cmd_Receive(&cmd, 0);
 #endif
         #if APP_VOFA_ENABLE
-        VOFA_Update();
+        VOFA_Update(); /* 组成JustFloat数据帧，经UART9 DMA发送；忙时跳过，不等待 */
         osDelay(APP_VOFA_TASK_PERIOD_MS);
         #else
         osDelay(99999);

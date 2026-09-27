@@ -1,0 +1,94 @@
+Event, Time (sec), Component, Event Property, Value
+0, 0.00000000, , Init Event, Restart Count=0x00000003
+1, 0.00000000, , Start Event, 
+2, 0.00000000, Arm events, Boot, state=0
+3, 3.30000000, Arm events, Enabled, state=0
+4, 7.55200000, Arm events, TrajectoryStart, state=1  duration_ms=2000
+5, 9.55100000, Arm events, CommandsSent, state=1  result=2
+6, 9.76000000, Arm events, XYArrivalSuccess, state=1  error_mm_rounded=6
+7, 11.31500000, Arm events, TrajectoryStart, state=2  duration_ms=2000
+8, 13.31400000, Arm events, CommandsSent, state=2  result=2
+9, 13.52000000, Arm events, XYArrivalSuccess, state=2  error_mm_rounded=7
+10, 14.11400000, Arm events, TrajectoryStart, state=3  duration_ms=2000
+11, 16.11300000, Arm events, CommandsSent, state=3  result=2
+12, 16.32000000, Arm events, XYArrivalSuccess, state=3  error_mm_rounded=4
+13, 16.95700000, Arm events, TrajectoryStart, state=4  duration_ms=2000
+14, 18.95600000, Arm events, CommandsSent, state=4  result=2
+15, 19.16000000, Arm events, XYArrivalSuccess, state=4  error_mm_rounded=5
+16, 19.81000000, Arm events, TrajectoryStart, state=5  duration_ms=2000
+17, 21.80900000, Arm events, CommandsSent, state=5  result=2
+18, 22.02000000, Arm events, XYArrivalSuccess, state=5  error_mm_rounded=4
+19, 22.21000000, Arm events, TrajectoryStart, state=6  duration_ms=2000
+20, 24.20900000, Arm events, CommandsSent, state=6  result=2
+21, 24.42000000, Arm events, XYArrivalSuccess, state=6  error_mm_rounded=5
+22, 31.10300000, Arm events, TrajectoryStart, state=7  duration_ms=2000
+23, 33.10200000, Arm events, CommandsSent, state=7  result=2
+24, 33.31000000, Arm events, XYArrivalSuccess, state=7  error_mm_rounded=7
+25, 34.98000000, Arm events, TrajectoryStart, state=8  duration_ms=2000
+26, 36.97900000, Arm events, CommandsSent, state=8  result=2
+27, 37.19000000, Arm events, XYArrivalSuccess, state=8  error_mm_rounded=3
+28, 41.94800000, Arm events, TrajectoryStart, state=9  duration_ms=2000
+29, 43.94700000, Arm events, CommandsSent, state=9  result=2
+30, 44.15000000, Arm events, XYArrivalSuccess, state=9  error_mm_rounded=2
+31, 46.05000000, Arm events, TrajectoryStart, state=0  duration_ms=3000
+32, 49.05000000, Arm events, CommandsSent, state=0  result=2
+33, 49.26000000, Arm events, XYArrivalSuccess, state=0  error_mm_rounded=1
+34, 50.12600000, Arm events, TrajectoryStart, state=1  duration_ms=2000
+35, 52.12500000, Arm events, CommandsSent, state=1  result=2
+36, 52.33000000, Arm events, XYArrivalSuccess, state=1  error_mm_rounded=6
+37, 53.23400000, Arm events, TrajectoryStart, state=2  duration_ms=2000
+38, 55.23300000, Arm events, CommandsSent, state=2  result=2
+39, 55.44000000, Arm events, XYArrivalSuccess, state=2  error_mm_rounded=7
+40, 55.72300000, Arm events, TrajectoryStart, state=3  duration_ms=2000
+41, 57.72200000, Arm events, CommandsSent, state=3  result=2
+42, 57.93000000, Arm events, XYArrivalSuccess, state=3  error_mm_rounded=4
+43, 60.65000000, Arm events, TrajectoryStart, state=4  duration_ms=2000
+44, 62.64900000, Arm events, CommandsSent, state=4  result=2
+45, 62.86000000, Arm events, XYArrivalSuccess, state=4  error_mm_rounded=6
+46, 68.31600000, Arm events, TrajectoryStart, state=5  duration_ms=2000
+47, 70.31500000, Arm events, CommandsSent, state=5  result=2
+48, 70.52000000, Arm events, XYArrivalSuccess, state=5  error_mm_rounded=4
+49, 101.03100000, Arm events, TrajectoryStart, state=0  duration_ms=3000
+50, 104.03100000, Arm events, CommandsSent, state=0  result=2
+51, 104.24000000, Arm events, XYArrivalSuccess, state=0  error_mm_rounded=1
+52, 144.44200000, Arm events, TestRequestRefused, state=0  request=1
+53, 145.40000000, Arm events, Disabled, state=0
+54, 157.16000000, Arm events, FeedbackTimeout_ALARM_ONLY, state=0  motor=0
+55, 157.16000000, Arm events, SnapshotContext, seq=53  state=0  sample_ms=157364  timeout_ms=10
+56, 157.16000000, Arm events, SnapshotLink, seq=53  motor=0  age_ms=18  drive_error=0
+57, 157.16000000, Arm events, FeedbackTimeout_ALARM_ONLY, state=0  motor=1
+58, 157.16000000, Arm events, SnapshotContext, seq=54  state=0  sample_ms=157364  timeout_ms=10
+59, 157.16000000, Arm events, SnapshotLink, seq=54  motor=1  age_ms=19  drive_error=0
+60, 171.60000000, Arm events, FeedbackRecovered, state=0  motor=1
+61, 171.60000000, Arm events, SnapshotContext, seq=55  state=0  sample_ms=171804  timeout_ms=10
+62, 171.60000000, Arm events, SnapshotLink, seq=55  motor=1  age_ms=1  drive_error=0
+63, 171.61000000, Arm events, FeedbackRecovered, state=0  motor=0
+64, 171.61000000, Arm events, SnapshotContext, seq=56  state=0  sample_ms=171814  timeout_ms=10
+65, 171.61000000, Arm events, SnapshotLink, seq=56  motor=0  age_ms=2  drive_error=0
+66, 222.59800000, Arm events, TestUnreachableTarget, state=0  target_x_mm_rounded=913  target_y_mm=0
+67, 222.59800000, Arm events, InvalidTarget, state=0  result=3
+68, 222.59800000, Arm events, SnapshotContext, seq=58  state=0  sample_ms=222802  timeout_ms=10
+69, 222.59800000, Arm events, SnapshotLink, seq=58  motor=0  age_ms=2  drive_error=0
+70, 222.59800000, Arm events, SnapshotAngles, seq=58  motor=0  target_mrad=0  feedback_mrad=-1
+71, 222.59800000, Arm events, SnapshotLoad, seq=58  motor=0  speed_mrad_s=16  torque_mNm=0
+72, 222.59800000, Arm events, SnapshotLink, seq=58  motor=1  age_ms=1  drive_error=0
+73, 222.59800000, Arm events, SnapshotAngles, seq=58  motor=1  target_mrad=0  feedback_mrad=1
+74, 222.59800000, Arm events, SnapshotLoad, seq=58  motor=1  speed_mrad_s=-4  torque_mNm=0
+75, 245.43200000, Arm events, TestXYOffsetArmed, state=0  check_offset_x_mm=50
+76, 256.53000000, Arm events, Enabled, state=0
+77, 273.42300000, Arm events, TrajectoryStart, state=1  duration_ms=2000
+78, 275.42200000, Arm events, CommandsSent, state=1  result=2
+79, 275.42200000, Arm events, TestXYOffsetApplied, state=1  check_offset_x_mm=50
+80, 277.43000000, Arm events, XYArrivalTimeout, state=1  error_mm_rounded=55
+81, 277.43000000, Arm events, SnapshotContext, seq=64  state=1  sample_ms=277634  timeout_ms=10
+82, 277.43000000, Arm events, SnapshotLink, seq=64  motor=0  age_ms=2  drive_error=0
+83, 277.43000000, Arm events, SnapshotAngles, seq=64  motor=0  target_mrad=1600  feedback_mrad=1607
+84, 277.43000000, Arm events, SnapshotLoad, seq=64  motor=0  speed_mrad_s=19  torque_mNm=-1459
+85, 277.43000000, Arm events, SnapshotLink, seq=64  motor=1  age_ms=1  drive_error=0
+86, 277.43000000, Arm events, SnapshotAngles, seq=64  motor=1  target_mrad=350  feedback_mrad=337
+87, 277.43000000, Arm events, SnapshotLoad, seq=64  motor=1  speed_mrad_s=-47  torque_mNm=2670
+88, 277.43000000, Arm events, SnapshotXYGoal, seq=64  x_mm_x10=-3359  y_mm_x10=5869  tolerance_mm_x10=100
+89, 277.43000000, Arm events, SnapshotXYFeedback, seq=64  x_mm_x10=-3909  y_mm_x10=5825  valid=1
+90, 285.18000000, Arm events, TrajectoryStart, state=0  duration_ms=3000
+91, 288.18000000, Arm events, CommandsSent, state=0  result=2
+92, 288.39000000, Arm events, XYArrivalSuccess, state=0  error_mm_rounded=0

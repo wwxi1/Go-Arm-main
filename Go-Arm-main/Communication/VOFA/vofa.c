@@ -75,7 +75,7 @@ void VOFA_Update(void)
 
     memcpy(sending_vofa_buffer, &VofaTxPack, (VOFA_PACKET_SIZE));
     SCB_CleanDCache_by_Addr((uint32_t *)sending_vofa_buffer, VOFA_BUFFER_STRIDE);
-    /* Set before DMA starts: completion may preempt this task. Single TX owner. */
+    /* 启动DMA前先置忙，防止完成中断抢占后又被错误置忙；发送由单个任务负责。 */
     vofa_dma_busy = true;
     if (HAL_UART_Transmit_DMA(&BOARD_VOFA_UART, sending_vofa_buffer, VOFA_PACKET_SIZE) == HAL_OK)
     {
